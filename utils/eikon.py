@@ -21,5 +21,15 @@ column_mapping = {
     "Gross Profitp":"gross_profit_p",
     "EBITDAp":"ebitda_p",
     "EBITp":"ebit_p",
-    "Net Income after Taxp":"net_income_p"
+    "Net Income after Taxp":"net_income_p",
+    "Exchange Market Identifier Code":"exchange_code",	
+    "Region of Headquarters": "region_hq",
+    "Country of Headquarters":"country_hq",	
+    "State or Province of Headquarters":"state_province_hq",	
+    "Organization Founded Year":"founding_year",	
+    "TRBC Economic Sector Name":"economic_sector",
+    "TRBC Business Sector Name":"business_sector",
+    "TRBC Industry Group Name":"industry_group",	
+    "TRBC Industry Name":"industry",	
+    "TRBC Activity Name":"activity",
 }
