@@ -11,11 +11,8 @@ def get_df_artifact(name: str, project: str):
         return pd.read_feather(filepath)
 
 
-def put_dataset(df: pd.DataFrame, filename: str, project: str, reset_index: bool = False):
-    if reset_index:
-        df = df.reset_index()
-
-    df.to_feather(filename)
+def put_dataset(df: pd.DataFrame, filename: str, project: str, drop_index: bool = True):
+    df.reset_index(drop=drop_index).to_feather(filename)
 
     artifact = wb.Artifact(filename.split(".")[0], type="dataset")
     artifact.add_file(filename)
