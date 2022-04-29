@@ -7,6 +7,7 @@ column_mapping = {
     "Period End Date":"period_end_date", 
     "Balance Sheet Orig Announce Date":"announce_date",
     "Total Revenue":"revenue",
+    "Gross Profit":"gross_profit",
     "EBITDA": "ebitda", 
     "EBIT":"ebit", 
     "Net Income after Tax":"net_income", 
