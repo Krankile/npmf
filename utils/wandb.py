@@ -17,10 +17,11 @@ def put_dataset(
     project: str,
     type_: str = "dataset",
     drop_index: bool = True,
+    description: str = None,
 ):
     df.reset_index(drop=drop_index).to_feather(filename)
 
-    artifact = wb.Artifact(filename.split(".")[0], type=type_)
+    artifact = wb.Artifact(filename.split(".")[0], type=type_, description=description)
     artifact.add_file(filename)
 
     with wb.init(project=project) as run:
