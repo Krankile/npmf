@@ -2,7 +2,7 @@ import wandb as wb
 import pandas as pd
 
 
-def get_df_artifact(name: str, project: str):
+def get_dataset(name: str, project: str):
     with wb.init(project=project) as run:
         art = run.use_artifact(name)
         art.download()
