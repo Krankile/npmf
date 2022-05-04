@@ -18,13 +18,10 @@ def get_1_month_test_set(df):
 
 
 def get_train_set(df, limit=None):
-    out = df[df.index < test_start_pd]
+    out = df[df.index < test_start_pd].copy()
 
     if limit is not None:
-        out.loc[:, "obs_number"] = (
-            out.groupby("ticker").date.rank(method="first", ascending=False).astype(int)
-        )
-        out = out[out.obs_number <= limit]
-        out = out.drop(columns=["obs_number"])
+        out.loc[:, "obs_number"] = obsnum(out)
+        out = out[out.obs_number <= limit].drop(columns=["obs_number"])
 
     return out
