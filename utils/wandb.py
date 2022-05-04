@@ -26,3 +26,11 @@ def put_dataset(
 
     with wb.init(project=project) as run:
         run.log_artifact(artifact)
+
+
+aker_f = (
+    fund[(fund.ticker == ticker) & (fund.announce_date >= "2018-01-01")]
+    .set_index("announce_date")
+    .drop(columns=["period_end_date"])
+    .drop_duplicates("announce_date", keep="last")
+)
