@@ -12,3 +12,13 @@ def get_1_month_test_set(df):
         out.groupby("ticker").date.rank(method="first", ascending=True).astype(int)
     )
     return out[out.obs_number <= 20].drop(columns=["obs_number"])
+
+
+def get_train_set(df, limit=None):
+    out = df[df.index < test_start_pd]
+
+    if limit is not None:
+        out["obs_number"] = out.groupby("ticker").date.rank(method='first', ascending=False).astype(int)
+        out = out[out.obs_number <= limit].drop(columns=["obs_number"])
+
+    return out
