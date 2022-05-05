@@ -1,3 +1,5 @@
+import pickle
+
 import wandb as wb
 import pandas as pd
 
@@ -26,3 +28,14 @@ def put_dataset(
 
     with wb.init(project=project) as run:
         run.log_artifact(artifact)
+
+
+def put_models(filename: str, model_dict: dict, metadata: dict = None):
+    with open(filename, mode="wb") as f:
+        pickle.dump(model_dict, f)
+
+    with wb.init(project="master-test") as run:
+        art = wb.Artifact(filename.split(".")[0], type="model", metadata=metadata)
+        art.add_file(filename)
+
+        run.log_artifact(art)
