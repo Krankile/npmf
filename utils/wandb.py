@@ -39,3 +39,13 @@ def put_models(filename: str, model_dict: dict, metadata: dict = None):
         art.add_file(filename)
 
         run.log_artifact(art)
+
+
+def get_models(artifact_name: str):
+    with wb.init(project="master-test") as run:
+        art = run.use_artifact(artifact_name)
+        art.download()
+        filename = art.file()
+
+    with open(filename, mode="rb") as f:
+        return pickle.load(f)
