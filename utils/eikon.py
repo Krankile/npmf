@@ -1,9 +1,30 @@
-column_mapping = {
-    "Instrument": "ticker",
+
+col_map_macro = {
+    "BRT-": "brt",
+    "CLc1": "clc",
+    "WTCLc1": "wtc",
+    "LNG-AS": "lng",
+    ".VIX": "vix",
+    "EUR=": "eur",
+    "GBP=": "gbp",
+    "CNY=": "cny",
+}
+
+col_map_meta =  {"Instrument": "ticker",
     "Date": "date",
-    "Company Market Cap": "market_cap",
-    "Price Close": "close_price",
-    "Currency": "currency",
+    "Exchange Market Identifier Code": "exchange_code",
+    "Region of Headquarters": "region_hq",
+    "Country of Headquarters": "country_hq",
+    "State or Province of Headquarters": "state_province_hq",
+    "Organization Founded Year": "founding_year",
+    "TRBC Economic Sector Name": "economic_sector",
+    "TRBC Business Sector Name": "business_sector",
+    "TRBC Industry Group Name": "industry_group",
+    "TRBC Industry Name": "industry",
+    "TRBC Activity Name": "activity",}
+
+col_map_fundamentals =  {"Instrument": "ticker",
+    "Date": "date",
     "Period End Date": "period_end_date",
     "Balance Sheet Orig Announce Date": "announce_date",
     "Total Revenue": "revenue",
@@ -21,26 +42,14 @@ column_mapping = {
     "Gross Profitp": "gross_profit_p",
     "EBITDAp": "ebitda_p",
     "EBITp": "ebit_p",
-    "Net Income after Taxp": "net_income_p",
-    "Exchange Market Identifier Code": "exchange_code",
-    "Region of Headquarters": "region_hq",
-    "Country of Headquarters": "country_hq",
-    "State or Province of Headquarters": "state_province_hq",
-    "Organization Founded Year": "founding_year",
-    "TRBC Economic Sector Name": "economic_sector",
-    "TRBC Business Sector Name": "business_sector",
-    "TRBC Industry Group Name": "industry_group",
-    "TRBC Industry Name": "industry",
-    "TRBC Activity Name": "activity",
+    "Net Income after Taxp": "net_income_p",}
+
+col_map_stock = {
+    "Instrument": "ticker",
+    "Date": "date",
+    "Company Market Cap": "market_cap",
+    "Price Close": "close_price",
+    "Currency": "currency",
 }
 
-col_map_macro = {
-    "BRT-": "brt",
-    "CLc1": "clc",
-    "WTCLc1": "wtc",
-    "LNG-AS": "lng",
-    ".VIX": "vix",
-    "EUR=": "eur",
-    "GBP=": "gbp",
-    "CNY=": "cny",
-}
+column_mapping = col_map_macro | col_map_meta | col_map_fundamentals | col_map_stock
