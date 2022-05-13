@@ -33,3 +33,14 @@ column_mapping = {
     "TRBC Industry Name": "industry",
     "TRBC Activity Name": "activity",
 }
+
+col_map_macro = {
+    "BRT-": "brt",
+    "CLc1": "clc",
+    "WTCLc1": "wtc",
+    "LNG-AS": "lng",
+    ".VIX": "vix",
+    "EUR=": "eur",
+    "GBP=": "gbp",
+    "CNY=": "cny",
+}
