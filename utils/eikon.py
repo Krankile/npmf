@@ -52,4 +52,4 @@ col_map_stock = {
     "Currency": "currency",
 }
 
-column_mapping = col_map_macro | col_map_meta | col_map_fundamentals | col_map_stock
+column_mapping = {**col_map_macro, **col_map_meta, **col_map_fundamentals, **col_map_stock}
