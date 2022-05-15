@@ -5,9 +5,9 @@ col_map_macro = {
     "WTCLc1": "wtc",
     "LNG-AS": "lng",
     ".VIX": "vix",
-    "EUR=": "eur",
-    "GBP=": "gbp",
-    "CNY=": "cny",
+    "EUR=": "eur_fx",
+    "GBP=": "gbp_fx",
+    "CNY=": "cny_fx",
 }
 
 col_map_meta =  {"Instrument": "ticker",
