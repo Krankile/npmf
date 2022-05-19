@@ -1,4 +1,3 @@
-
 col_map_macro = {
     "BRT-": "brt",
     "CLc1": "clc",
@@ -10,7 +9,8 @@ col_map_macro = {
     "CNY=": "cny_fx",
 }
 
-col_map_meta =  {"Instrument": "ticker",
+col_map_meta = {
+    "Instrument": "ticker",
     "Date": "date",
     "Exchange Market Identifier Code": "exchange_code",
     "Region of Headquarters": "region_hq",
@@ -21,9 +21,11 @@ col_map_meta =  {"Instrument": "ticker",
     "TRBC Business Sector Name": "business_sector",
     "TRBC Industry Group Name": "industry_group",
     "TRBC Industry Name": "industry",
-    "TRBC Activity Name": "activity",}
+    "TRBC Activity Name": "activity",
+}
 
-col_map_fundamentals =  {"Instrument": "ticker",
+col_map_fundamentals = {
+    "Instrument": "ticker",
     "Date": "date",
     "Period End Date": "period_end_date",
     "Balance Sheet Orig Announce Date": "announce_date",
@@ -42,7 +44,8 @@ col_map_fundamentals =  {"Instrument": "ticker",
     "Gross Profitp": "gross_profit_p",
     "EBITDAp": "ebitda_p",
     "EBITp": "ebit_p",
-    "Net Income after Taxp": "net_income_p",}
+    "Net Income after Taxp": "net_income_p",
+}
 
 col_map_stock = {
     "Instrument": "ticker",
@@ -52,4 +55,9 @@ col_map_stock = {
     "Currency": "currency",
 }
 
-column_mapping = {**col_map_macro, **col_map_meta, **col_map_fundamentals, **col_map_stock}
+column_mapping = {
+    **col_map_macro,
+    **col_map_meta,
+    **col_map_fundamentals,
+    **col_map_stock,
+}
