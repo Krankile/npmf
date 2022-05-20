@@ -28,8 +28,8 @@ def test_get_stocks_in_timeframe_scaled():
 
 def test_get_forecasts_in_timeframe():
     base_path = Path("tests", "dataset")
-    forecast_df = unpickle_df(base_path / "stock_df.pickle")
-    actual = unpickle_df(base_path / "out_forecast.pickle")
+    forecasts = unpickle_df(base_path / "forecasts.pickle")
+    actual = unpickle_df(base_path / "forecasts_unnormalized.pickle")
 
     current_time = pd.to_datetime("2010-03-01")
     forecast_window = 20
@@ -37,7 +37,7 @@ def test_get_forecasts_in_timeframe():
     date_range = get_forecast_dates(current_time, forecast_window)
 
     out = get_stocks_in_timeframe(
-        stock_df=forecast_df, stock_dates=date_range, scale=False, remove_na=False
+        stock_df=forecasts, stock_dates=date_range, scale=False, remove_na=False
     )
 
     assert actual.equals(out)
