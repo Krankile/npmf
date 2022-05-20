@@ -5,14 +5,16 @@ import pandas as pd
 from sklearn.preprocessing import minmax_scale
 
 
-def get_stocks_in_timeframe(stock_df, stock_dates, scale=True):
+def get_stocks_in_timeframe(stock_df, stock_dates, scale=True, remove_na=True):
     out = pd.DataFrame(
         data=0, columns=stock_dates, index=stock_df.ticker.unique(), dtype=np.float64
     )
     stock_df = stock_df.pivot(index="ticker", columns="date", values="market_cap")
-    out = out.add(stock_df).ffill(axis=1)
+    out = out.add(stock_df)
 
-    out[out.isna()] = 0
+    if remove_na:
+        out = out.ffill(axis=1)
+        out[out.isna()] = 0
 
     # Perform MinMaxScaling on the full dataset
     if scale:
