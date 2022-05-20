@@ -1,4 +1,5 @@
 from datetime import timedelta
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -34,7 +35,7 @@ def get_historic_dates(current_time, trading_days):
     )[-trading_days:]
 
 
-def get_forecast_dates(current_time, forecast_window):
+def get_forecast_dates(current_time: np.datetime64, forecast_window: int) -> pd.DatetimeIndex:
     forward_in_time_buffer = timedelta(forecast_window + forecast_window * 5)
     return pd.date_range(
         start=current_time + timedelta(1),
@@ -43,19 +44,33 @@ def get_forecast_dates(current_time, forecast_window):
     )[:forecast_window]
 
 
-def get_global_local_column(stock_df):
-    last_market_cap_col = pd.Series()
-    for ticker, df in tqdm(stock_df.groupby(by="ticker"), desc="Get global local column"):
-        last_market_cap_col[ticker] = df.market_cap.dropna().iloc[-1]
+def _get_last_market_cap(stock_df: pd.DataFrame) -> pd.Series:
+    return (
+        stock_df.dropna(subset=["market_cap"])
+        .drop_duplicates(subset=["ticker"], keep="last")
+        .set_index("ticker")
+        .market_cap.squeeze()
+        .astype(np.float64)
+    )
 
-    min_max_scaler = MinMaxScaler()
+
+def _minmax_scale_series(series: pd.Series) -> pd.Series:
+    return pd.Series(
+        minmax_scale(series.to_numpy().reshape((-1, 1))).squeeze(),
+        index=series.index,
+    )
+
+
+def get_global_local_column(stock_df: pd.DataFrame) -> Tuple[pd.Series, pd.Series, pd.Series]:
+    apple_market_cap = 2.687 * (10**12)  # ish as of may 2022 (USD)
     
-    #Add column to learn relative values
-    apple_market_cap = 2.687*(10**12) #ish as of may 2022 (USD)
+    last_market_cap_col = _get_last_market_cap(stock_df)
     
     relative_to_global_market_column: pd.Series = last_market_cap_col / apple_market_cap
-    
-    relative_to_current_market_column = min_max_scaler.fit_transform(last_market_cap_col.to_numpy().reshape((-1,1)))
-    relative_to_current_market_column = pd.Series(relative_to_current_market_column[:,0], index=last_market_cap_col.index) 
+    relative_to_current_market_column = _minmax_scale_series(last_market_cap_col)
 
-    return relative_to_global_market_column, relative_to_current_market_column, last_market_cap_col
+    return (
+        relative_to_global_market_column,
+        relative_to_current_market_column,
+        last_market_cap_col,
+    )
