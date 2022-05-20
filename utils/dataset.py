@@ -35,7 +35,9 @@ def get_historic_dates(current_time, trading_days):
     )[-trading_days:]
 
 
-def get_forecast_dates(current_time: np.datetime64, forecast_window: int) -> pd.DatetimeIndex:
+def get_forecast_dates(
+    current_time: np.datetime64, forecast_window: int
+) -> pd.DatetimeIndex:
     forward_in_time_buffer = timedelta(forecast_window + forecast_window * 5)
     return pd.date_range(
         start=current_time + timedelta(1),
@@ -61,11 +63,13 @@ def _minmax_scale_series(series: pd.Series) -> pd.Series:
     )
 
 
-def get_global_local_column(stock_df: pd.DataFrame) -> Tuple[pd.Series, pd.Series, pd.Series]:
+def get_global_local_column(
+    stock_df: pd.DataFrame,
+) -> Tuple[pd.Series, pd.Series, pd.Series]:
     apple_market_cap = 2.687 * (10**12)  # ish as of may 2022 (USD)
-    
+
     last_market_cap_col = _get_last_market_cap(stock_df)
-    
+
     relative_to_global_market_column: pd.Series = last_market_cap_col / apple_market_cap
     relative_to_current_market_column = _minmax_scale_series(last_market_cap_col)
 
@@ -74,3 +78,47 @@ def get_global_local_column(stock_df: pd.DataFrame) -> Tuple[pd.Series, pd.Serie
         relative_to_current_market_column,
         last_market_cap_col,
     )
+
+
+def create_fundamental_df(
+    fundamentals,
+    legal_fundamental_df,
+    n_reports,
+    relative_to_current_market_column,
+    relative_to_global_market_column,
+    last_market_cap_col,
+):
+    fund_columns = []
+    for i in range(n_reports):
+        fund_columns.extend(
+            legal_fundamental_df.loc[0, "revenue":]
+            .index.to_series()
+            .map(lambda title: f"{title}_q=-{n_reports-i}")
+        )
+    columns = ["global_relative"] + ["peers_relative"] + fund_columns
+    fundamental_df = pd.DataFrame(
+        index=legal_fundamental_df.ticker.unique(), columns=columns
+    )
+
+    fundamental_df["peers_relative"] = relative_to_current_market_column.loc[
+        fundamental_df.index
+    ]
+    fundamental_df["global_relative"] = relative_to_global_market_column.loc[
+        fundamental_df.index
+    ]
+
+    fundamental_df.loc[:, f"revenue_q={-n_reports}":"net_income_p_q=-1"] = fundamentals
+    for q in range(n_reports, 0, -1):
+        fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = fundamental_df.loc[
+            :, f"revenue_q={-q}":f"fcf_q={-q}"
+        ].div(last_market_cap_col, axis=0)
+        fundamental_df.loc[
+            :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
+        ] = fundamental_df.loc[
+            :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
+        ].div(
+            fundamental_df.loc[:, f"total_assets_q={-q}"], axis=0
+        )
+        fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
+
+    return fundamental_df
