@@ -41,3 +41,21 @@ def get_forecast_dates(current_time, forecast_window):
         end=current_time + forward_in_time_buffer,
         freq="B",
     )[:forecast_window]
+
+
+def get_global_local_column(stock_df):
+    last_market_cap_col = pd.Series()
+    for ticker, df in tqdm(stock_df.groupby(by="ticker"), desc="Get global local column"):
+        last_market_cap_col[ticker] = df.market_cap.dropna().iloc[-1]
+
+    min_max_scaler = MinMaxScaler()
+    
+    #Add column to learn relative values
+    apple_market_cap = 2.687*(10**12) #ish as of may 2022 (USD)
+    
+    relative_to_global_market_column: pd.Series = last_market_cap_col / apple_market_cap
+    
+    relative_to_current_market_column = min_max_scaler.fit_transform(last_market_cap_col.to_numpy().reshape((-1,1)))
+    relative_to_current_market_column = pd.Series(relative_to_current_market_column[:,0], index=last_market_cap_col.index) 
+
+    return relative_to_global_market_column, relative_to_current_market_column, last_market_cap_col
