@@ -31,6 +31,7 @@ def get_stocks_in_timeframe(
             index=out.index,
             columns=out.columns,
         )
+    out = out.ffill(axis=1).replace(np.nan, 0)
     return out
 
 
