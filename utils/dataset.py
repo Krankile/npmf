@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
 
-from utils.dtypes import fundamental_types
+from ..utils.dtypes import fundamental_types
 
 
 def get_stocks_in_timeframe(stock_df, stock_dates, scale=True, remove_na=True):
