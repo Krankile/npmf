@@ -1,8 +1,10 @@
 from pathlib import Path
 import pandas as pd
+import numpy as np
 
 from utils.dataset import (
     get_global_local_column,
+    get_last_q_fundamentals,
     get_stocks_in_timeframe,
     get_historic_dates,
     get_forecast_dates,

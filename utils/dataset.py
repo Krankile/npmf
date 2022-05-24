@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
 
+from utils.dtypes import fundamental_types
+
 
 def get_stocks_in_timeframe(stock_df, stock_dates, scale=True, remove_na=True):
     out = pd.DataFrame(
@@ -122,3 +124,18 @@ def create_fundamental_df(
         fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
 
     return fundamental_df
+
+
+def get_last_q_fundamentals(fundamental_df, q):
+    fundamental_df = fundamental_df[~fundamental_df.date.isna()].astype(fundamental_types)
+    tickers = fundamental_df.ticker.unique()
+    
+    fundamental_df["rank"] = fundamental_df.groupby("ticker").date.rank(method="first", ascending=False).astype(int)
+    fundamental_df = fundamental_df.set_index(["ticker", "rank"])
+    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= 4].loc[:, "revenue":]
+    
+    multidx = pd.MultiIndex.from_product([tickers, range(q, 0, -1)], names=["ticker", "rank"])
+    funds = pd.DataFrame(data=0, index=multidx, columns=fundamental_df.loc[:, "revenue":].columns, dtype=fundamental_df.dtypes.values)
+    
+    result = funds.add(fundamental_df).sort_index(ascending=[True, False])
+    return result 
