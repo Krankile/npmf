@@ -241,16 +241,17 @@ def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
         :, "economic_sector":"activity"
     ].astype("category")
 
-    legal_meta_df["founding_year"] = legal_meta_df["founding_year"].astype(np.float64)
-    legal_meta_df["founding_year"] = legal_meta_df["founding_year"].replace(
-        to_replace=np.nan, value=legal_meta_df["founding_year"].mean(skipna=True)
+    meta_cont = legal_meta_df["founding_year"].astype(np.float64)
+
+    meta_cont = meta_cont.replace(
+        to_replace=np.nan, value=meta_cont.mean(skipna=True)
     )
-    legal_meta_df["founding_year"] = legal_meta_df["founding_year"] / 2000
+    meta_cont = meta_cont / 2000
 
     cat_cols = legal_meta_df.select_dtypes("category").columns
-    legal_meta_df[cat_cols] = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes)
+    meta_cat = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes)
 
-    return legal_meta_df
+    return meta_cont, meta_cat
 
 
 class TimeDeltaDataset(Dataset):
@@ -300,7 +301,7 @@ class TimeDeltaDataset(Dataset):
         self.stocks_and_fundamentals = formatted_stocks.join(fundamental_df)
 
         # Get meta df
-        self.meta_df = get_meta_df(meta_df, self.stocks_and_fundamentals)
+        self.meta_cont, self.meta_cat = get_meta_df(meta_df, self.stocks_and_fundamentals)
 
         # Get macro df
         self.macro_df = get_macro_df(macro_df, historic_dates)
@@ -317,7 +318,8 @@ class TimeDeltaDataset(Dataset):
 
         return (
             self.stocks_and_fundamentals.iloc[idx, :].to_numpy(),
-            self.meta_df.iloc[idx, :].to_numpy().astype(np.float64),
+            self.meta_cont.iloc[idx, :].to_numpy().astype(np.float64),
+            self.meta_cat.iloc[idx, :].to_numpy(),
             self.macro_df.T.to_numpy(),
             self.forecast.iloc[idx, :].to_numpy().astype(np.float64),
         )
