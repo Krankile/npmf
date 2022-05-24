@@ -320,6 +320,6 @@ class TimeDeltaDataset(Dataset):
             self.stocks_and_fundamentals.iloc[idx, :].to_numpy(),
             self.meta_cont.iloc[idx, :].to_numpy().astype(np.float64),
             self.meta_cat.iloc[idx, :].to_numpy(),
-            self.macro_df.T.to_numpy(),
+            self.macro_df.T.to_numpy().ravel(),
             self.forecast.iloc[idx, :].to_numpy().astype(np.float64),
         )
