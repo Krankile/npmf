@@ -246,7 +246,7 @@ def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
     meta_cont = meta_cont.replace(
         to_replace=np.nan, value=meta_cont.mean(skipna=True)
     )
-    meta_cont = meta_cont / 2000
+    meta_cont = (meta_cont / 2000).to_frame()
 
     cat_cols = legal_meta_df.select_dtypes("category").columns
     meta_cat = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes)
