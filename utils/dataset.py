@@ -129,6 +129,9 @@ def create_fundamental_df(
         )
         fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
 
+
+    fundamental_df = fundamental_df.replace(np.nan, 0)
+
     return fundamental_df
 
 
@@ -179,7 +182,7 @@ def get_macro_df(
     # TODO change to current_time - stock__macro_days_lookback_days
     legal_macro_df = macro_df.loc[macro_df.date.isin(historic_dates), :]
 
-    return normalize_macro(legal_macro_df, macro_df).iloc[:, 1:]
+    return normalize_macro(legal_macro_df, macro_df).iloc[:, 1:].replace(np.nan, 0)
 
 
 def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
