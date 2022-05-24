@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
 
-from torch.utils.data import Dataset
-
 from ..utils.dtypes import fundamental_types
+
+from torch.utils.data import Dataset
 
 
 def get_stocks_in_timeframe(
@@ -205,10 +205,13 @@ def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
 
 
 def get_forecast(
-    stock_df, stocks_and_fundamentals, forecast_dates, last_market_cap_col
+    stock_df: pd.DataFrame,
+    stocks_and_fundamentals: pd.DataFrame,
+    forecast_dates,
+    last_market_cap_col,
 ):
 
-    forecasts = stock_df[stock_df.date.isin(forecast_dates)]
+    forecasts: pd.DataFrame = stock_df[stock_df.date.isin(forecast_dates)]
 
     forecasts_unormalized = get_stocks_in_timeframe(
         forecasts,
@@ -219,11 +222,15 @@ def get_forecast(
 
     # TODO: Check if using the same MinMax-scaler as for training set is better
     forecasts_normalized = forecasts_unormalized.div(last_market_cap_col, axis=0)
-    return forecasts_normalized.loc[stocks_and_fundamentals.index, :]
+    forecasts_normalized = forecasts_normalized.loc[
+        stocks_and_fundamentals.index, :
+    ].astype(np.float64)
+
+    return forecasts_normalized
 
 
-def get_meta_df(meta_df, stocks_and_fundamentals):
-    legal_meta_df = meta_df.set_index("ticker")
+def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
+    legal_meta_df: pd.DataFrame = meta_df.set_index("ticker")
 
     # Join meta and stock-fundamentals
     legal_meta_df = legal_meta_df.loc[stocks_and_fundamentals.index, :]
@@ -234,7 +241,15 @@ def get_meta_df(meta_df, stocks_and_fundamentals):
         :, "economic_sector":"activity"
     ].astype("category")
 
+    legal_meta_df["founding_year"] = legal_meta_df["founding_year"].astype(np.float64)
+    legal_meta_df["founding_year"] = legal_meta_df["founding_year"].replace(
+        to_replace=np.nan, value=legal_meta_df["founding_year"].mean(skipna=True)
+    )
     legal_meta_df["founding_year"] = legal_meta_df["founding_year"] / 2000
+
+    cat_cols = legal_meta_df.select_dtypes("category").columns
+    legal_meta_df[cat_cols] = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes)
+
     return legal_meta_df
 
 
@@ -301,7 +316,8 @@ class TimeDeltaDataset(Dataset):
     def __getitem__(self, idx):
 
         return (
-            self.stocks_and_fundamentals.iloc[idx, :].values,
-            self.meta_df.iloc[idx, :].values,
-            self.macro_df.T.values,
-        ), self.forecast.iloc[idx, :].values,
+            self.stocks_and_fundamentals.iloc[idx, :].to_numpy(),
+            self.meta_df.iloc[idx, :].to_numpy().astype(np.float64),
+            self.macro_df.T.to_numpy(),
+            self.forecast.iloc[idx, :].to_numpy().astype(np.float64),
+        )
