@@ -1,14 +1,19 @@
 from datetime import timedelta
 from typing import Tuple
+import math
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
 
+from torch.utils.data import Dataset
+
 from ..utils.dtypes import fundamental_types
 
 
-def get_stocks_in_timeframe(stock_df, stock_dates, scale=True, remove_na=True):
+def get_stocks_in_timeframe(
+    stock_df, stock_dates, scale=True, remove_na=True
+) -> pd.DataFrame:
     out = pd.DataFrame(
         data=0, columns=stock_dates, index=stock_df.ticker.unique(), dtype=np.float64
     )
@@ -16,7 +21,7 @@ def get_stocks_in_timeframe(stock_df, stock_dates, scale=True, remove_na=True):
     out = out.add(stock_df)
 
     if remove_na:
-        out = out.ffill(axis=1)
+        out: pd.DataFrame = out.ffill(axis=1)
         out[out.isna()] = 0
 
     # Perform MinMaxScaling on the full dataset
@@ -127,15 +132,176 @@ def create_fundamental_df(
 
 
 def get_last_q_fundamentals(fundamental_df, q):
-    fundamental_df = fundamental_df[~fundamental_df.date.isna()].astype(fundamental_types)
+    fundamental_df = fundamental_df[~fundamental_df.date.isna()].astype(
+        fundamental_types
+    )
     tickers = fundamental_df.ticker.unique()
-    
-    fundamental_df["rank"] = fundamental_df.groupby("ticker").date.rank(method="first", ascending=False).astype(int)
+
+    fundamental_df["rank"] = (
+        fundamental_df.groupby("ticker")
+        .date.rank(method="first", ascending=False)
+        .astype(int)
+    )
     fundamental_df = fundamental_df.set_index(["ticker", "rank"])
-    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= 4].loc[:, "revenue":]
-    
-    multidx = pd.MultiIndex.from_product([tickers, range(q, 0, -1)], names=["ticker", "rank"])
-    funds = pd.DataFrame(data=0, index=multidx, columns=fundamental_df.loc[:, "revenue":].columns, dtype=fundamental_df.dtypes.values)
-    
+    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= 4].loc[
+        :, "revenue":
+    ]
+
+    multidx = pd.MultiIndex.from_product(
+        [tickers, range(q, 0, -1)], names=["ticker", "rank"]
+    )
+    funds = pd.DataFrame(
+        data=0,
+        index=multidx,
+        columns=fundamental_df.loc[:, "revenue":].columns,
+        dtype=fundamental_df.dtypes.values,
+    )
+
     result = funds.add(fundamental_df).sort_index(ascending=[True, False])
-    return result 
+    return result
+
+
+def normalize_macro(legal_macro_df, macro_df):
+    df = legal_macro_df.copy()
+    for column in [
+        c for c in legal_macro_df.columns if (c != "date") and ("_fx" not in c)
+    ]:
+        df[column] = legal_macro_df[column] / (
+            int(math.ceil(macro_df[column].max() / 100.0)) * 100
+        )
+    return df
+
+
+def get_macro_df(
+    macro_df: pd.DataFrame, historic_dates: pd.DatetimeIndex
+) -> pd.DataFrame:
+    # TODO change to current_time - stock__macro_days_lookback_days
+    legal_macro_df = macro_df.loc[macro_df.date.isin(historic_dates), :]
+
+    return normalize_macro(legal_macro_df, macro_df).iloc[:, 1:]
+
+
+def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
+    # Only keep fundamentals for where we have stock data
+    legal_fundamental_df = fundamental_df[
+        (fundamental_df.announce_date < current_time)
+        & (fundamental_df.ticker.isin(stock_tickers))
+        & ~fundamental_df.date.isna()
+    ]
+
+    # Important dimensions
+    n_companies_with_fundamentals = len(legal_fundamental_df.ticker.unique())
+    m_fundamentals = legal_fundamental_df.loc[:, "revenue":].shape[1]
+
+    # Get last q fundamentals and return NA rows if they are still missing
+    fundamental_df_all_quarters = get_last_q_fundamentals(
+        legal_fundamental_df, n_reports
+    )
+    fundamentals = fundamental_df_all_quarters.to_numpy().reshape(
+        (n_companies_with_fundamentals, n_reports * m_fundamentals)
+    )
+
+    return fundamentals, legal_fundamental_df
+
+
+def get_forecast(
+    stock_df, stocks_and_fundamentals, forecast_dates, last_market_cap_col
+):
+
+    forecasts = stock_df[stock_df.date.isin(forecast_dates)]
+
+    forecasts_unormalized = get_stocks_in_timeframe(
+        forecasts,
+        forecast_dates,
+        scale=False,
+        remove_na=False,
+    )
+
+    # TODO: Check if using the same MinMax-scaler as for training set is better
+    forecasts_normalized = forecasts_unormalized.div(last_market_cap_col, axis=0)
+    return forecasts_normalized.loc[stocks_and_fundamentals.index, :]
+
+
+def get_meta_df(meta_df, stocks_and_fundamentals):
+    legal_meta_df = meta_df.set_index("ticker")
+
+    # Join meta and stock-fundamentals
+    legal_meta_df = legal_meta_df.loc[stocks_and_fundamentals.index, :]
+    legal_meta_df.loc[:, "exchange_code":"state_province_hq"] = legal_meta_df.loc[
+        :, "exchange_code":"state_province_hq"
+    ].astype("category")
+    legal_meta_df.loc[:, "economic_sector":"activity"] = legal_meta_df.loc[
+        :, "economic_sector":"activity"
+    ].astype("category")
+
+    legal_meta_df["founding_year"] = legal_meta_df["founding_year"] / 2000
+    return legal_meta_df
+
+
+class TimeDeltaDataset(Dataset):
+    def __init__(
+        self,
+        current_time: pd.Timestamp,
+        forecast_window: int,
+        training_window: int,
+        n_reports: int,
+        stock_df: pd.DataFrame,
+        fundamental_df: pd.DataFrame,
+        meta_df: pd.DataFrame,
+        macro_df: pd.DataFrame,
+    ):
+        # Get the relevant dates for training and forecasting
+        historic_dates = get_historic_dates(current_time, training_window)
+        forecast_dates = get_forecast_dates(current_time, forecast_window)
+
+        # Get stock df
+        legal_stock_df = stock_df.copy().loc[stock_df.date.isin(historic_dates), :]
+        formatted_stocks = get_stocks_in_timeframe(
+            legal_stock_df, historic_dates, scale=True, remove_na=True
+        )
+
+        # Get relative size information
+        (
+            relative_to_global_market_column,
+            relative_to_current_market_column,
+            last_market_cap_col,
+        ) = get_global_local_column(legal_stock_df)
+
+        # Get fundamentals df
+        stock_tickers: np.array = legal_stock_df.ticker.unique()
+        fundamentals, legal_fundamental_df = get_fundamentals(
+            fundamental_df, stock_tickers, current_time, n_reports
+        )
+        fundamental_df = create_fundamental_df(
+            fundamentals,
+            legal_fundamental_df,
+            n_reports,
+            relative_to_current_market_column,
+            relative_to_global_market_column,
+            last_market_cap_col,
+        )
+
+        # Combine stocks and fundamentals
+        self.stocks_and_fundamentals = formatted_stocks.join(fundamental_df)
+
+        # Get meta df
+        self.meta_df = get_meta_df(meta_df, self.stocks_and_fundamentals)
+
+        # Get macro df
+        self.macro_df = get_macro_df(macro_df, historic_dates)
+
+        # Get forecasts
+        self.forecast = get_forecast(
+            stock_df, self.stocks_and_fundamentals, forecast_dates, last_market_cap_col
+        )
+
+    def __len__(self):
+        return self.stocks_and_fundamentals.shape[0]
+
+    def __getitem__(self, idx):
+
+        return (
+            self.stocks_and_fundamentals.iloc[idx, :],
+            self.meta_df.iloc[idx, :],
+            self.macro_df.T,
+        ), self.forecast.iloc[idx, :]

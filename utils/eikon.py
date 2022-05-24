@@ -39,7 +39,7 @@ col_map_fundamentals = {
     "Total Current Assets": "total_current_assets",
     "Total Liabilities": "total_liabilites",
     "Total Current Liabilities": "total_current_liabilities",
-    "Price To Book":"price_book",
+    "Price To Book": "price_book",
     "Long Term Debt Percentage of Total Assets": "long_term_debt_p_assets",
     "Short Term Debt Percentage of Total Assets": "short_term_debt_p_assets",
     "Gross Profitp": "gross_profit_p",
