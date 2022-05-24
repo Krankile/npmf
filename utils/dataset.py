@@ -301,7 +301,7 @@ class TimeDeltaDataset(Dataset):
     def __getitem__(self, idx):
 
         return (
-            self.stocks_and_fundamentals.iloc[idx, :],
-            self.meta_df.iloc[idx, :],
-            self.macro_df.T,
-        ), self.forecast.iloc[idx, :]
+            self.stocks_and_fundamentals.iloc[idx, :].values,
+            self.meta_df.iloc[idx, :].values,
+            self.macro_df.T.values,
+        ), self.forecast.iloc[idx, :].values,
