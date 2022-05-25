@@ -54,7 +54,6 @@ def get_models(artifact_name: str):
         return pickle.load(f)
 
 def update_aliases(project: str, alias: str, artifacts):
-    
     api = wb.Api()
     for artifact_ in artifacts:
         artifact = api.artifact(f"krankile/{project}/{artifact_}")
