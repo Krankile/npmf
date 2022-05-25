@@ -121,7 +121,7 @@ def create_fundamental_df(
         fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = (
             fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"]
             .div(last_market_cap_col, axis=0)
-            .clip(upper=1, lower=-1)
+            .clip(upper=3, lower=-3)
         )
         fundamental_df.loc[
             :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
