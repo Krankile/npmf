@@ -129,7 +129,6 @@ def create_fundamental_df(
         )
         fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
 
-
     fundamental_df = fundamental_df.replace(np.nan, 0)
 
     return fundamental_df
@@ -300,7 +299,10 @@ class TimeDeltaDataset(Dataset):
         )
 
         # Combine stocks and fundamentals
-        self.stocks_and_fundamentals = formatted_stocks.join(fundamental_df)
+        # TODO: Review the strategy for dealing with nan values
+        self.stocks_and_fundamentals = formatted_stocks.join(fundamental_df).replace(
+            np.nan, 0
+        )
 
         # Get meta df
         self.meta_cont, self.meta_cat = get_meta_df(
