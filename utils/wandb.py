@@ -17,6 +17,7 @@ def put_dataset(
     df: pd.DataFrame,
     filename: str,
     project: str,
+    alias: str ="latest",
     type_: str = "dataset",
     drop_index: bool = True,
     description: str = None,
@@ -28,6 +29,7 @@ def put_dataset(
         filename.split(".")[0], type=type_, description=description, metadata=metadata
     )
     artifact.add_file(filename)
+    artifact.aliases.append(alias)
 
     with wb.init(project=project) as run:
         run.log_artifact(artifact)
