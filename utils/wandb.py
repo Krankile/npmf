@@ -52,3 +52,11 @@ def get_models(artifact_name: str):
 
     with open(filename, mode="rb") as f:
         return pickle.load(f)
+
+def update_aliases(project: str, alias: str, artifacts):
+    
+    api = wb.Api()
+    for artifact_ in artifacts:
+        artifact = api.artifact(f"krankile/{project}/{artifact_}")
+        artifact.aliases.append(alias)
+    artifact.save()
