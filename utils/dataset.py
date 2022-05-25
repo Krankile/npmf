@@ -260,8 +260,8 @@ class TimeDeltaDataset(Dataset):
     def __init__(
         self,
         current_time: pd.Timestamp,
-        forecast_window: int,
         training_window: int,
+        forecast_window: int,
         n_reports: int,
         stock_df: pd.DataFrame,
         fundamental_df: pd.DataFrame,
