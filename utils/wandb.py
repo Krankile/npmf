@@ -1,4 +1,5 @@
 import pickle
+from typing import Iterable
 
 import wandb as wb
 import pandas as pd
@@ -53,7 +54,8 @@ def get_models(artifact_name: str):
     with open(filename, mode="rb") as f:
         return pickle.load(f)
 
-def update_aliases(project: str, alias: str, artifacts):
+
+def update_aliases(project: str, alias: str, artifacts: Iterable):
     api = wb.Api()
     for artifact_ in artifacts:
         artifact = api.artifact(f"krankile/{project}/{artifact_}")

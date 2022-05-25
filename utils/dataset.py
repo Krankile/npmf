@@ -20,9 +20,11 @@ def get_stocks_in_timeframe(
     stock_df = stock_df.pivot(index="ticker", columns="date", values="market_cap")
     out = out.add(stock_df)
 
+    # Remove tickers where data missing for ticker in the whole period
+    out = out.dropna(axis=0, how="all")
+
     if remove_na:
-        out: pd.DataFrame = out.ffill(axis=1)
-        out[out.isna()] = 0
+        out: pd.DataFrame = out.ffill(axis=1).replace(np.nan, 0)
 
     # Perform MinMaxScaling on the full dataset
     if scale:
@@ -31,7 +33,6 @@ def get_stocks_in_timeframe(
             index=out.index,
             columns=out.columns,
         )
-    out = out.ffill(axis=1).replace(np.nan, 0)
     return out
 
 
@@ -117,15 +118,24 @@ def create_fundamental_df(
 
     fundamental_df.loc[:, f"revenue_q={-n_reports}":"net_income_p_q=-1"] = fundamentals
     for q in range(n_reports, 0, -1):
-        fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = fundamental_df.loc[
-            :, f"revenue_q={-q}":f"fcf_q={-q}"
-        ].div(last_market_cap_col, axis=0)
+        fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = (
+            fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"]
+            .div(last_market_cap_col, axis=0)
+            .clip(upper=1, lower=-1)
+        )
         fundamental_df.loc[
             :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
         ] = fundamental_df.loc[
             :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
         ].div(
             fundamental_df.loc[:, f"total_assets_q={-q}"], axis=0
+        )
+        fundamental_df.loc[
+            :, f"long_term_debt_p_assets_q={-q}":f"short_term_debt_p_assets_q={-q}"
+        ] = fundamental_df.loc[
+            :, f"long_term_debt_p_assets_q={-q}":f"short_term_debt_p_assets_q={-q}"
+        ].div(
+            100
         )
         fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
 
@@ -236,24 +246,27 @@ def get_macro_df(
 def get_forecast(
     stock_df: pd.DataFrame,
     stocks_and_fundamentals: pd.DataFrame,
-    forecast_dates,
-    last_market_cap_col,
+    forecast_dates: pd.DatetimeIndex,
+    last_market_cap_col: pd.Series,
 ):
 
     forecasts: pd.DataFrame = stock_df[stock_df.date.isin(forecast_dates)]
 
-    forecasts_unormalized = get_stocks_in_timeframe(
+    forecasts_unnormalized = get_stocks_in_timeframe(
         forecasts,
         forecast_dates,
         scale=False,
         remove_na=False,
     )
+    tickers = stocks_and_fundamentals.index.intersection(forecasts_unnormalized.index)
+    forecasts_unnormalized = forecasts_unnormalized.loc[tickers, :]
 
     # TODO: Check if using the same MinMax-scaler as for training set is better
-    forecasts_normalized = forecasts_unormalized.div(last_market_cap_col, axis=0)
-    forecasts_normalized = forecasts_normalized.loc[
-        stocks_and_fundamentals.index, :
-    ].astype(np.float64)
+    forecasts_normalized = forecasts_unnormalized.div(
+        last_market_cap_col.loc[tickers], axis=0
+    )
+
+    forecasts_normalized = forecasts_normalized.astype(np.float64)
 
     return forecasts_normalized
 
@@ -303,9 +316,17 @@ class TimeDeltaDataset(Dataset):
 
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
-        self.stocks_and_fundamentals = formatted_stocks.join(fundamental_df).replace(
+        stocks_and_fundamentals = formatted_stocks.join(fundamental_df).replace(
             np.nan, 0
         )
+
+        # Get forecasts
+        self.forecast = get_forecast(
+            stock_df, stocks_and_fundamentals, forecast_dates, last_market_cap_col
+        )
+        self.stocks_and_fundamentals = stocks_and_fundamentals.loc[
+            self.forecast.index, :
+        ]
 
         # Get meta df
         self.meta_cont, self.meta_cat = get_meta_df(
@@ -314,11 +335,6 @@ class TimeDeltaDataset(Dataset):
 
         # Get macro df
         self.macro_df = get_macro_df(macro_df, historic_dates)
-
-        # Get forecasts
-        self.forecast = get_forecast(
-            stock_df, self.stocks_and_fundamentals, forecast_dates, last_market_cap_col
-        )
 
     def __len__(self):
         return self.stocks_and_fundamentals.shape[0]
@@ -330,5 +346,5 @@ class TimeDeltaDataset(Dataset):
             self.meta_cont.iloc[idx, :].to_numpy().astype(np.float64),
             self.meta_cat.iloc[idx, :].to_numpy(),
             self.macro_df.T.to_numpy().ravel(),
-            self.forecast.iloc[idx, :].to_numpy().astype(np.float64),
+            self.forecast.iloc[idx, :].to_numpy(),
         )
