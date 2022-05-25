@@ -164,26 +164,6 @@ def get_last_q_fundamentals(fundamental_df, q):
     return result
 
 
-def normalize_macro(legal_macro_df, macro_df):
-    df = legal_macro_df.copy()
-    for column in [
-        c for c in legal_macro_df.columns if (c != "date") and ("_fx" not in c)
-    ]:
-        df[column] = legal_macro_df[column] / (
-            int(math.ceil(macro_df[column].max() / 100.0)) * 100
-        )
-    return df
-
-
-def get_macro_df(
-    macro_df: pd.DataFrame, historic_dates: pd.DatetimeIndex
-) -> pd.DataFrame:
-    # TODO change to current_time - stock__macro_days_lookback_days
-    legal_macro_df = macro_df.loc[macro_df.date.isin(historic_dates), :]
-
-    return normalize_macro(legal_macro_df, macro_df).iloc[:, 1:].replace(np.nan, 0)
-
-
 def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
     # Only keep fundamentals for where we have stock data
     legal_fundamental_df = fundamental_df[
@@ -205,6 +185,52 @@ def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
     )
 
     return fundamentals, legal_fundamental_df
+
+
+def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
+    legal_meta_df: pd.DataFrame = meta_df.set_index("ticker")
+
+    # Join meta and stock-fundamentals
+    legal_meta_df = legal_meta_df.loc[stocks_and_fundamentals.index, :]
+    legal_meta_df.loc[:, "exchange_code":"state_province_hq"] = legal_meta_df.loc[
+        :, "exchange_code":"state_province_hq"
+    ].astype("category")
+    legal_meta_df.loc[:, "economic_sector":"activity"] = legal_meta_df.loc[
+        :, "economic_sector":"activity"
+    ].astype("category")
+
+    meta_cont = legal_meta_df["founding_year"].astype(np.float64)
+
+    meta_cont = meta_cont.replace(to_replace=np.nan, value=meta_cont.mean(skipna=True))
+    meta_cont = (meta_cont / 2000).to_frame()
+
+    cat_cols = legal_meta_df.select_dtypes("category").columns
+    meta_cat = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes) + 1
+
+    return meta_cont, meta_cat
+
+
+def normalize_macro(legal_macro_df, macro_df):
+    df = legal_macro_df.copy()
+    for column in [c for c in legal_macro_df.columns if ("_fx" not in c)]:
+        df[column] = legal_macro_df[column] / (
+            int(math.ceil(macro_df[column].max() / 100.0)) * 100
+        )
+    return df
+
+
+def get_macro_df(
+    macro_df: pd.DataFrame, historic_dates: pd.DatetimeIndex
+) -> pd.DataFrame:
+    macro_df = macro_df.set_index("date")
+
+    legal_macro_df = macro_df.loc[macro_df.index.isin(historic_dates), :]
+
+    full_macro_df = pd.DataFrame(
+        data=legal_macro_df, index=historic_dates, columns=legal_macro_df.columns
+    ).ffill(axis=0)
+    full_macro_df = normalize_macro(full_macro_df, macro_df).replace(np.nan, 0)
+    return full_macro_df
 
 
 def get_forecast(
@@ -230,29 +256,6 @@ def get_forecast(
     ].astype(np.float64)
 
     return forecasts_normalized
-
-
-def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
-    legal_meta_df: pd.DataFrame = meta_df.set_index("ticker")
-
-    # Join meta and stock-fundamentals
-    legal_meta_df = legal_meta_df.loc[stocks_and_fundamentals.index, :]
-    legal_meta_df.loc[:, "exchange_code":"state_province_hq"] = legal_meta_df.loc[
-        :, "exchange_code":"state_province_hq"
-    ].astype("category")
-    legal_meta_df.loc[:, "economic_sector":"activity"] = legal_meta_df.loc[
-        :, "economic_sector":"activity"
-    ].astype("category")
-
-    meta_cont = legal_meta_df["founding_year"].astype(np.float64)
-
-    meta_cont = meta_cont.replace(to_replace=np.nan, value=meta_cont.mean(skipna=True))
-    meta_cont = (meta_cont / 2000).to_frame()
-
-    cat_cols = legal_meta_df.select_dtypes("category").columns
-    meta_cat = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes) + 1
-
-    return meta_cont, meta_cat
 
 
 class TimeDeltaDataset(Dataset):
