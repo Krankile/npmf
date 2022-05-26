@@ -10,7 +10,7 @@ class Dataset(Dataset):
     def __init__(self):
         self.data1 = pd.DataFrame(np.random.random((16, 3)))
         self.data2 = pd.DataFrame(np.random.random((16, 3)))
-    
+
     def __len__(self):
         return self.data1.shape[0]
 
@@ -19,6 +19,7 @@ class Dataset(Dataset):
             self.data1.iloc[idx, :].to_numpy(),
             self.data2.iloc[idx, :].to_numpy(),
         )
+
 
 def test_base_dataloader():
     data = Dataset()
@@ -30,7 +31,7 @@ def test_base_dataloader():
         assert batch1[0].equal(batch2[0])
         assert batch1[1].equal(batch2[1])
 
-    
+
 def test_to_device():
     data = Dataset()
 
@@ -45,5 +46,3 @@ def test_to_device():
 
         assert a1.to(torch.float32).equal(b1)
         assert a2.to(torch.float32).equal(b2)
-
-    
