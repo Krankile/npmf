@@ -7,9 +7,8 @@ class EarlyStop:
     def __init__(self, patience: int, min_delta: float) -> None:
         self.patience = patience
         self.min_delta = min_delta
-
-        self.best_loss = float("inf")
-        self.triggers = 0
+        
+        self.reset()
 
     def __call__(self, epoch_loss: List[float]) -> bool:
         loss = np.mean(epoch_loss)
@@ -21,3 +20,7 @@ class EarlyStop:
             self.triggers += 1
 
         return not self.triggers < self.patience
+
+    def reset(self):
+        self.best_loss = float("inf")
+        self.triggers = 0
