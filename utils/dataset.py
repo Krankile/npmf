@@ -43,15 +43,15 @@ def get_historic_dates(current_time, trading_days):
     )[-trading_days:]
 
 
-def get_forecast_dates(
-    current_time: np.datetime64, forecast_window: int
+def get_target_dates(
+    current_time: np.datetime64, target_window: int
 ) -> pd.DatetimeIndex:
-    forward_in_time_buffer = timedelta(forecast_window + forecast_window * 5)
+    forward_in_time_buffer = timedelta(target_window + target_window * 5)
     return pd.date_range(
         start=current_time + timedelta(1),
         end=current_time + forward_in_time_buffer,
         freq="B",
-    )[:forecast_window]
+    )[:target_window]
 
 
 def _get_last_market_cap(stock_df: pd.DataFrame) -> pd.Series:
@@ -242,56 +242,62 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def get_forecast(
+def get_target(
     stock_df: pd.DataFrame,
     stocks_and_fundamentals: pd.DataFrame,
-    forecast_dates: pd.DatetimeIndex,
+    target_dates: pd.DatetimeIndex,
     last_market_cap_col: pd.Series,
 ):
 
-    forecasts: pd.DataFrame = stock_df[stock_df.date.isin(forecast_dates)]
+    targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
-    forecasts_unnormalized = get_stocks_in_timeframe(
-        forecasts,
-        forecast_dates,
+    targets_unnormalized = get_stocks_in_timeframe(
+        targets,
+        target_dates,
         scale=False,
         remove_na=False,
     )
-    tickers = stocks_and_fundamentals.index.intersection(forecasts_unnormalized.index)
-    forecasts_unnormalized = forecasts_unnormalized.loc[tickers, :]
+    tickers = stocks_and_fundamentals.index.intersection(targets_unnormalized.index)
+    targets_unnormalized = targets_unnormalized.loc[tickers, :]
 
     # TODO: Check if using the same MinMax-scaler as for training set is better
-    forecasts_normalized = forecasts_unnormalized.div(
+    targets_normalized = targets_unnormalized.div(
         last_market_cap_col.loc[tickers], axis=0
     )
 
-    forecasts_normalized = forecasts_normalized.astype(np.float32)
+    targets_normalized = targets_normalized.astype(np.float32)
 
-    return forecasts_normalized
+    return targets_normalized
 
+def register_na_counts(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
+    dictionary[df_nick_name] = df.isnull().sum()
 
 class TimeDeltaDataset(Dataset):
     def __init__(
         self,
         current_time: pd.Timestamp,
         training_window: int,
-        forecast_window: int,
+        target_window: int,
         n_reports: int,
         stock_df: pd.DataFrame,
         fundamental_df: pd.DataFrame,
         meta_df: pd.DataFrame,
         macro_df: pd.DataFrame,
     ):
-        # Get the relevant dates for training and forecasting
+        # Get the relevant dates for training and targeting
         historic_dates = get_historic_dates(current_time, training_window)
-        forecast_dates = get_forecast_dates(current_time, forecast_window)
+        target_dates = get_target_dates(current_time, target_window)
 
+        #Initialize NA counter
+        self.na_counts = dict()
+        
         # Get stock df
         legal_stock_df = stock_df.copy().loc[stock_df.date.isin(historic_dates), :]
         formatted_stocks = get_stocks_in_timeframe(
             legal_stock_df, historic_dates, scale=True, remove_na=True
         )
-
+        register_na_counts(self.na_counts, "stock", legal_stock_df)
+        
         # Get relative size information
         (
             relative_to_global_market_column,
@@ -312,27 +318,30 @@ class TimeDeltaDataset(Dataset):
             relative_to_global_market_column,
             last_market_cap_col,
         )
-
+        register_na_counts(self.na_counts, "fundamentals", legal_fundamental_df)
+        
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
         stocks_and_fundamentals = (
             formatted_stocks.join(fundamental_df).replace(np.nan, 0).astype(np.float32)
         )
-
-        # Get forecasts
-        self.forecast = get_forecast(
-            stock_df, stocks_and_fundamentals, forecast_dates, last_market_cap_col
+        
+        # Get targets
+        self.target = get_target(
+            stock_df, stocks_and_fundamentals, target_dates, last_market_cap_col
         )
         self.stocks_and_fundamentals = stocks_and_fundamentals.loc[
-            self.forecast.index, :
+            self.target.index, :
         ]
-
+        register_na_counts(self.na_counts, "target", self.target)
+        
         # Get meta df
         self.meta_cont, self.meta_cat = get_meta_df(
             meta_df, self.stocks_and_fundamentals
         )
 
         # Get macro df
+        register_na_counts(self.na_counts, "macro", macro_df)
         self.macro_df = get_macro_df(macro_df, historic_dates)
 
     def __len__(self):
@@ -345,5 +354,5 @@ class TimeDeltaDataset(Dataset):
             self.meta_cont.iloc[idx, :].to_numpy(),
             self.meta_cat.iloc[idx, :].to_numpy(),
             self.macro_df.T.to_numpy().ravel(),
-            self.forecast.iloc[idx, :].to_numpy(),
+            self.target.iloc[idx, :].to_numpy(),
         )
