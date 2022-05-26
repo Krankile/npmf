@@ -18,10 +18,8 @@ def get_datasets(names: Iterable[str], project: str):
     dfs = []
     with wb.init(project=project) as run:
         for name in names:
-            art = run.use_artifact(name)
-            art.download()
-            filepath = art.file()
-            df = pd.read_feather(filepath)
+            art = run.use_artifact(name); art.download()
+            df = pd.read_feather(art.file())
             dfs.append(df)
     return dfs
 
