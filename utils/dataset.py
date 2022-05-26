@@ -115,7 +115,7 @@ def create_fundamental_df(
         fundamental_df.index
     ]
 
-    fundamental_df.loc[:, f"revenue_q={-n_reports}":"net_income_p_q=-1"] = fundamentals
+    fundamental_df.loc[:, f"revenue_q={-n_reports}":"net_income_p_revenue_q=-1"] = fundamentals
     for q in range(n_reports, 0, -1):
         fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = (
             fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"]
