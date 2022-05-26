@@ -24,3 +24,8 @@ class EarlyStop:
     def reset(self):
         self.best_loss = float("inf")
         self.triggers = 0
+
+
+def to_device(loader, device):
+    for batch in loader:
+        yield map(lambda data: data.to(device), batch)
