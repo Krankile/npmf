@@ -269,8 +269,8 @@ def get_target(
 
     return targets_normalized
 
-def register_na_counts(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum().sum()
+def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
+    dictionary[df_nick_name] = df.isnull().sum().sum()/df.shape[0]
 
 class TimeDeltaDataset(Dataset):
     def __init__(
@@ -289,14 +289,14 @@ class TimeDeltaDataset(Dataset):
         target_dates = get_target_dates(current_time, target_window)
 
         #Initialize NA counter
-        self.na_counts = dict()
+        self.na_percentage = dict()
         
         # Get stock df
         legal_stock_df = stock_df.copy().loc[stock_df.date.isin(historic_dates), :]
+        register_na_percentage(self.na_percentage, "stock", legal_stock_df)
         formatted_stocks = get_stocks_in_timeframe(
             legal_stock_df, historic_dates, scale=True, remove_na=True
         )
-        register_na_counts(self.na_counts, "stock", legal_stock_df)
         
         # Get relative size information
         (
@@ -318,7 +318,7 @@ class TimeDeltaDataset(Dataset):
             relative_to_global_market_column,
             last_market_cap_col,
         )
-        register_na_counts(self.na_counts, "fundamentals", legal_fundamental_df)
+        register_na_percentage(self.na_percentage, "fundamentals", legal_fundamental_df)
         
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
@@ -333,7 +333,7 @@ class TimeDeltaDataset(Dataset):
         self.stocks_and_fundamentals = stocks_and_fundamentals.loc[
             self.target.index, :
         ]
-        register_na_counts(self.na_counts, "target", self.target)
+        register_na_percentage(self.na_percentage, "target", self.target)
         
         # Get meta df
         self.meta_cont, self.meta_cat = get_meta_df(
@@ -341,7 +341,7 @@ class TimeDeltaDataset(Dataset):
         )
 
         # Get macro df
-        register_na_counts(self.na_counts, "macro", macro_df)
+        register_na_percentage(self.na_percentage, "macro", macro_df)
         self.macro_df = get_macro_df(macro_df, historic_dates)
 
     def __len__(self):
