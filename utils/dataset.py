@@ -216,7 +216,7 @@ def get_meta_df(meta_df: pd.DataFrame, stocks_and_fundamentals: pd.DataFrame):
     cat_cols = legal_meta_df.select_dtypes("category").columns
     meta_cat = legal_meta_df[cat_cols].apply(lambda col: col.cat.codes) + 1
 
-    return meta_cont, meta_cat
+    return meta_cont.astype(np.float32), meta_cat.astype(np.int64)
 
 
 def normalize_macro(legal_macro_df, macro_df):
@@ -239,7 +239,7 @@ def get_macro_df(
         data=legal_macro_df, index=historic_dates, columns=legal_macro_df.columns
     ).ffill(axis=0)
     full_macro_df = normalize_macro(full_macro_df, macro_df).replace(np.nan, 0)
-    return full_macro_df
+    return full_macro_df.astype(np.float32)
 
 
 def get_forecast(
@@ -265,7 +265,7 @@ def get_forecast(
         last_market_cap_col.loc[tickers], axis=0
     )
 
-    forecasts_normalized = forecasts_normalized.astype(np.float64)
+    forecasts_normalized = forecasts_normalized.astype(np.float32)
 
     return forecasts_normalized
 
@@ -315,8 +315,8 @@ class TimeDeltaDataset(Dataset):
 
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
-        stocks_and_fundamentals = formatted_stocks.join(fundamental_df).replace(
-            np.nan, 0
+        stocks_and_fundamentals = (
+            formatted_stocks.join(fundamental_df).replace(np.nan, 0).astype(np.float32)
         )
 
         # Get forecasts
@@ -342,7 +342,7 @@ class TimeDeltaDataset(Dataset):
 
         return (
             self.stocks_and_fundamentals.iloc[idx, :].to_numpy(),
-            self.meta_cont.iloc[idx, :].to_numpy().astype(np.float64),
+            self.meta_cont.iloc[idx, :].to_numpy(),
             self.meta_cat.iloc[idx, :].to_numpy(),
             self.macro_df.T.to_numpy().ravel(),
             self.forecast.iloc[idx, :].to_numpy(),
