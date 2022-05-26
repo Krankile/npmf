@@ -270,7 +270,7 @@ def get_target(
     return targets_normalized
 
 def register_na_counts(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum()
+    dictionary[df_nick_name] = df.isnull().sum().sum()
 
 class TimeDeltaDataset(Dataset):
     def __init__(
