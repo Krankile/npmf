@@ -1,14 +1,13 @@
+import math
 from datetime import timedelta
 from typing import Tuple
-import math
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
-
-from ..utils.dtypes import fundamental_types
-
 from torch.utils.data import Dataset
+
+from .dtypes import fundamental_types
 
 
 def get_stocks_in_timeframe(

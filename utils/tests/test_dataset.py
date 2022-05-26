@@ -8,9 +8,9 @@ from utils.dataset import (
     get_forecast_dates,
 )
 
-from utils.tests import unpickle_df
+from .utils import unpickle_df
 
-base_path = Path("tests", "dataset", "data")
+base_path = Path("utils", "tests", "data")
 
 
 def test_get_stocks_in_timeframe_scaled():
@@ -24,22 +24,6 @@ def test_get_stocks_in_timeframe_scaled():
 
     out = get_stocks_in_timeframe(
         stock_df=stock_df, stock_dates=date_range, scale=True, remove_na=True
-    )
-
-    assert actual.equals(out)
-
-
-def test_get_forecasts_in_timeframe():
-    forecasts = unpickle_df(base_path / "forecasts.pickle")
-    actual = unpickle_df(base_path / "forecasts_unnormalized.pickle")
-
-    current_time = pd.to_datetime("2010-03-01")
-    forecast_window = 20
-
-    date_range = get_forecast_dates(current_time, forecast_window)
-
-    out = get_stocks_in_timeframe(
-        stock_df=forecasts, stock_dates=date_range, scale=False, remove_na=False
     )
 
     assert actual.equals(out)
