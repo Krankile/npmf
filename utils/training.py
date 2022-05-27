@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+from tqdm import tqdm
 
 
 class EarlyStop:
@@ -29,3 +30,22 @@ class EarlyStop:
 def to_device(loader, device):
     for batch in loader:
         yield map(lambda data: data.to(device), batch)
+
+
+def mape_loss(target, y_pred):
+    mask = ~target.isnan()
+    denom = mask.sum(dim=1)
+    target[target != target] = 0
+    l = ((((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom).mean()
+    return l
+
+
+class TqdmPostFix(tqdm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._postfix = dict()
+
+    def update_postfix(self, d: dict):
+        self._postfix.update(d)
+        self.set_postfix(self._postfix)

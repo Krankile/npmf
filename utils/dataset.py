@@ -155,7 +155,7 @@ def get_last_q_fundamentals(fundamental_df, q):
         .astype(int)
     )
     fundamental_df = fundamental_df.set_index(["ticker", "rank"])
-    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= 4].loc[
+    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= q].loc[
         :, "revenue":
     ]
 
