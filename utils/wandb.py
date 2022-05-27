@@ -70,6 +70,7 @@ def update_aliases(project: str, alias: str, artifacts: Iterable):
     for artifact_ in artifacts:
         artifact = api.artifact(f"krankile/{project}/{artifact_}")
         if alias in artifact.aliases:
+            artifact.aliases.remove(alias)
             print(f"alias: {alias} removed from {artifact_}")
         else: 
             artifact.aliases.append(alias)
