@@ -14,6 +14,16 @@ def get_dataset(name: str, project: str):
         return pd.read_feather(filepath)
 
 
+def get_datasets(names: Iterable[str], project: str):
+    dfs = []
+    with wb.init(project=project) as run:
+        for name in names:
+            art = run.use_artifact(name); art.download()
+            df = pd.read_feather(art.file())
+            dfs.append(df)
+    return dfs
+
+
 def put_dataset(
     df: pd.DataFrame,
     filename: str,
@@ -59,5 +69,9 @@ def update_aliases(project: str, alias: str, artifacts: Iterable):
     api = wb.Api()
     for artifact_ in artifacts:
         artifact = api.artifact(f"krankile/{project}/{artifact_}")
-        artifact.aliases.append(alias)
+        if alias in artifact.aliases:
+            artifact.aliases.remove(alias)
+            print(f"alias: {alias} removed from {artifact_}")
+        else: 
+            artifact.aliases.append(alias)
     artifact.save()
