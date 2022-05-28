@@ -25,6 +25,7 @@ class EarlyStop:
     def reset(self):
         self.best_loss = float("inf")
         self.triggers = 0
+        return self
 
 
 def to_device(loader, device):
