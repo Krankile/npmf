@@ -269,8 +269,10 @@ def get_target(
 
     return targets_normalized
 
+
 def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum().sum()/(df.shape[0]*df.shape[1])
+    dictionary[df_nick_name] = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
+
 
 class TimeDeltaDataset(Dataset):
     def __init__(
@@ -288,16 +290,16 @@ class TimeDeltaDataset(Dataset):
         historic_dates = get_historic_dates(current_time, training_window)
         target_dates = get_target_dates(current_time, target_window)
 
-        #Initialize NA counter
+        # Initialize NA counter
         self.na_percentage = dict()
-        
+
         # Get stock df
         legal_stock_df = stock_df.copy().loc[stock_df.date.isin(historic_dates), :]
         register_na_percentage(self.na_percentage, "stock", legal_stock_df)
         formatted_stocks = get_stocks_in_timeframe(
             legal_stock_df, historic_dates, scale=True, remove_na=True
         )
-        
+
         # Get relative size information
         (
             relative_to_global_market_column,
@@ -319,22 +321,20 @@ class TimeDeltaDataset(Dataset):
             last_market_cap_col,
         )
         register_na_percentage(self.na_percentage, "fundamentals", legal_fundamental_df)
-        
+
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
         stocks_and_fundamentals = (
             formatted_stocks.join(fundamental_df).replace(np.nan, 0).astype(np.float32)
         )
-        
+
         # Get targets
         self.target = get_target(
             stock_df, stocks_and_fundamentals, target_dates, last_market_cap_col
         )
-        self.stocks_and_fundamentals = stocks_and_fundamentals.loc[
-            self.target.index, :
-        ]
+        self.stocks_and_fundamentals = stocks_and_fundamentals.loc[self.target.index, :]
         register_na_percentage(self.na_percentage, "target", self.target)
-        
+
         # Get meta df
         self.meta_cont, self.meta_cat = get_meta_df(
             meta_df, self.stocks_and_fundamentals

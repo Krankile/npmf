@@ -1,8 +1,9 @@
 import pickle
 from typing import Iterable
 
-import wandb as wb
 import pandas as pd
+
+import wandb as wb
 
 
 def get_dataset(name: str, project: str):
@@ -18,7 +19,8 @@ def get_datasets(names: Iterable[str], project: str):
     dfs = []
     with wb.init(project=project) as run:
         for name in names:
-            art = run.use_artifact(name); art.download()
+            art = run.use_artifact(name)
+            art.download()
             df = pd.read_feather(art.file())
             dfs.append(df)
     return dfs
@@ -72,6 +74,6 @@ def update_aliases(project: str, alias: str, artifacts: Iterable):
         if alias in artifact.aliases:
             artifact.aliases.remove(alias)
             print(f"alias: {alias} removed from {artifact_}")
-        else: 
+        else:
             artifact.aliases.append(alias)
     artifact.save()

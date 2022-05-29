@@ -4,6 +4,17 @@ import numpy as np
 from tqdm import tqdm
 
 
+class TqdmPostFix(tqdm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self._postfix = dict()
+
+    def update_postfix(self, d: dict):
+        self._postfix.update(d)
+        self.set_postfix(self._postfix)
+
+
 class EarlyStop:
     def __init__(self, patience: int, min_delta: float) -> None:
         self.patience = patience
@@ -11,7 +22,9 @@ class EarlyStop:
 
         self.reset()
 
-    def __call__(self, epoch_loss: List[float]) -> bool:
+    def __call__(
+        self, epoch_loss: List[float], pbar: TqdmPostFix | None = None
+    ) -> bool:
         loss = np.mean(epoch_loss)
 
         if loss < self.best_loss - self.min_delta:
@@ -19,6 +32,9 @@ class EarlyStop:
             self.triggers = 0
         else:
             self.triggers += 1
+
+        if pbar is not None:
+            pbar.update_postfix({"triggers": f"{self.triggers}/{self.patience}"})
 
         return not (self.triggers < self.patience)
 
@@ -33,20 +49,11 @@ def to_device(loader, device):
         yield map(lambda data: data.to(device), batch)
 
 
-def mape_loss(target, y_pred):
+def mape_loss(target, y_pred, reduce="mean"):
     mask = ~target.isnan()
     denom = mask.sum(dim=1)
     target[target != target] = 0
-    l = ((((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom).mean()
+    l = (
+        (((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom
+    ).mean()
     return l
-
-
-class TqdmPostFix(tqdm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self._postfix = dict()
-
-    def update_postfix(self, d: dict):
-        self._postfix.update(d)
-        self.set_postfix(self._postfix)
