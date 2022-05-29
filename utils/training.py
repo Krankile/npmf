@@ -22,9 +22,7 @@ class EarlyStop:
 
         self.reset()
 
-    def __call__(
-        self, epoch_loss: List[float], pbar: TqdmPostFix = None
-    ) -> bool:
+    def __call__(self, epoch_loss: List[float], pbar: TqdmPostFix = None) -> bool:
         loss = np.mean(epoch_loss)
 
         if loss < self.best_loss - self.min_delta:
@@ -49,7 +47,7 @@ def to_device(loader, device):
         yield map(lambda data: data.to(device), batch)
 
 
-def mape_loss(target, y_pred, reduce="mean"):
+def mape_loss(target, y_pred):
     mask = ~target.isnan()
     denom = mask.sum(dim=1)
     target[target != target] = 0
@@ -57,3 +55,8 @@ def mape_loss(target, y_pred, reduce="mean"):
         (((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom
     ).mean()
     return l
+
+
+loss_fns = dict(
+    mape=mape_loss,
+)
