@@ -23,7 +23,7 @@ class EarlyStop:
         self.reset()
 
     def __call__(
-        self, epoch_loss: List[float], pbar: TqdmPostFix | None = None
+        self, epoch_loss: List[float], pbar: TqdmPostFix = None
     ) -> bool:
         loss = np.mean(epoch_loss)
 
