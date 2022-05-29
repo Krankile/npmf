@@ -312,6 +312,7 @@ class TimeDeltaDataset(Dataset):
         fundamentals, legal_fundamental_df = get_fundamentals(
             fundamental_df, stock_tickers, current_time, n_reports
         )
+        register_na_percentage(self.na_percentage, "fundamentals", pd.DataFrame(fundamentals))
         fundamental_df = create_fundamental_df(
             fundamentals,
             legal_fundamental_df,
@@ -320,8 +321,7 @@ class TimeDeltaDataset(Dataset):
             relative_to_global_market_column,
             last_market_cap_col,
         )
-        register_na_percentage(self.na_percentage, "fundamentals", legal_fundamental_df)
-
+        
         # Combine stocks and fundamentals
         # TODO: Review the strategy for dealing with nan values
         stocks_and_fundamentals = (
@@ -343,6 +343,7 @@ class TimeDeltaDataset(Dataset):
         # Get macro df
         register_na_percentage(self.na_percentage, "macro", macro_df)
         self.macro_df = get_macro_df(macro_df, historic_dates)
+
 
     def __len__(self):
         return self.stocks_and_fundamentals.shape[0]
