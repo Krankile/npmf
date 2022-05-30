@@ -4,7 +4,6 @@ import numpy as np
 fundamental_types = {
     "ticker": str,
     "date": np.datetime64,
-    "period_end_date": np.datetime64,
     "announce_date": np.datetime64,
     "revenue": np.float32,
     "gross_profit": np.float32,
