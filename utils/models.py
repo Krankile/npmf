@@ -190,7 +190,7 @@ class TcnV1(nn.Module):
     def init_weights(self):
         self.linear.weight.data.normal_(0, 0.01)
 
-    def forward(self, x, cat):
+    def forward(self, x):
         y1 = self.tcn(x)
         return self.linear(y1[:, :, -1])
 
