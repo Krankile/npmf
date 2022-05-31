@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.preprocessing import minmax_scale
 from torch.utils.data import Dataset
 
-from .dtypes import fundamental_types
+from ..dtypes import fundamental_types
 
 
 def get_stocks_in_timeframe(
