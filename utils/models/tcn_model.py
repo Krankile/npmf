@@ -104,7 +104,7 @@ class TemporalConvNet(nn.Module):
 
 
 class TcnV1(nn.Module):
-    def __init__(self, input_size, output_size, num_channels, kernel_size, dropout, meta_cont_lens, meta_cat_lens, hd, meta_hd, **params):
+    def __init__(self, input_size, out_len, num_channels, kernel_size, dropout, meta_cont_lens, meta_cat_lens, hd, meta_hd, **params):
         super().__init__()
         self.tcn = TemporalConvNet(
             input_size, num_channels, kernel_size=kernel_size, dropout=dropout
@@ -128,7 +128,7 @@ class TcnV1(nn.Module):
         self.predict = (
             nn.Linear(num_channels[-1] + meta_hd, hd),
             nn.ReLU(),
-            nn.Linear(hd, output_size),
+            nn.Linear(hd, out_len),
         )
         # self.init_weights()
 
