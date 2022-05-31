@@ -208,7 +208,6 @@ def get_3d_fundamentals(
     relative_to_current_market_column,
     last_market_cap_col,
 ):
-
     current_time = historic_dates.values[-1]
     f = fundamental_df[
         (current_time + pd.Timedelta(weeks=104) <= fundamental_df.announce_date)
@@ -218,11 +217,10 @@ def get_3d_fundamentals(
     f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
 
-    register_na(
-        f.reindex(
-            index=pd.MultiIndex.from_product([tickers, f.index.get_level_values(1)])
-        )
-    )
+    rest = tickers - set(f.index.get_level_values(0).unique())
+    missing = pd.DataFrame(np.nan, index=pd.MultiIndex.from_product([rest, range(4)], names=["ticker", "announce_date"]), columns=f.columns)
+
+    register_na(pd.concat([f, missing], axis=0))
 
     f = f.reindex(columns=(["global_relative", "peers_relative"] + f.columns.to_list()))
     f = f.reset_index().set_index("ticker")
