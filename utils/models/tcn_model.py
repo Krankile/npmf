@@ -139,7 +139,7 @@ class TcnV1(nn.Module):
         )
 
         self.predict = nn.Sequential(
-            nn.Linear(channels[-1] + meta_hd, hd),
+            nn.Linear(channels + meta_hd, hd),
             nn.ReLU(),
             nn.Linear(hd, out_len),
         )
