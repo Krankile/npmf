@@ -105,6 +105,7 @@ def create_fundamental_df(
             .map(lambda title: f"{title}_q=-{n_reports-i}")
         )
     columns = ["global_relative"] + ["peers_relative"] + fund_columns
+
     fundamental_df = pd.DataFrame(
         index=legal_fundamental_df.ticker.unique(), columns=columns
     )
@@ -209,11 +210,19 @@ def get_3d_fundamentals(
 ):
 
     current_time = historic_dates.values[-1]
-    f = fundamental_df[fundamental_df.announce_date <= current_time]
-    register_na(f.set_index("ticker").reindex(index=tickers))
+    f = fundamental_df[
+        (current_time + pd.Timedelta(weeks=104) <= fundamental_df.announce_date)
+        & (fundamental_df.announce_date <= current_time)
+    ]
 
     f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
+
+    register_na(
+        f.reindex(
+            index=pd.MultiIndex.from_product([tickers, f.index.get_level_values(1)])
+        )
+    )
 
     f = f.reindex(columns=(["global_relative", "peers_relative"] + f.columns.to_list()))
     f = f.reset_index().set_index("ticker")
@@ -312,7 +321,6 @@ def get_target(
     tickers = tickers & set(targets_unnormalized.index)
     targets_unnormalized = targets_unnormalized.loc[tickers, :]
 
-    # TODO: Check if using the same MinMax-scaler as for training set is better
     targets_normalized = targets_unnormalized.div(
         last_market_cap_col.loc[tickers], axis=0
     )
