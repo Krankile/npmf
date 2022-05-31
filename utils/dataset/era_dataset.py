@@ -338,6 +338,7 @@ class EraDataset(Dataset):
         fundamental_df: pd.DataFrame,
         meta_df: pd.DataFrame,
         macro_df: pd.DataFrame,
+        **_,
     ):
         # Get the relevant dates for training and targeting
         historic_dates = get_historic_dates(current_time, training_window)
