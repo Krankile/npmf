@@ -243,16 +243,15 @@ def get_3d_fundamentals(
     )
 
     dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
+    f = f.reset_index().set_index(["ticker", "announce_date"])
+    f.index = f.index.rename("date", level=1)
     f = f.reindex(
         index=pd.MultiIndex.from_product(
-            [tickers, dates], names=["ticker", "announce_date"]
+            [tickers, dates], names=["ticker", "date"]
         )
     )
     f = f.loc[f.index.get_level_values(1).isin(historic_dates), :]
-
     f = f.groupby(level=0).ffill().replace(np.nan, 0)
-    f = f.reset_index().set_index(["ticker", "announce_date"])
-    f.index = f.index.rename("date", level=1)
 
     return f
 
