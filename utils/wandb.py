@@ -87,4 +87,4 @@ def get_nn_model(artifact_name, project):
         conf = artifact.metadata
         model = models[conf["model"]](**conf)
         model.load_state_dict(torch.load(model_state_dict))
-    return model
+    return model, conf
