@@ -207,29 +207,20 @@ def get_3d_fundamentals(
     relative_to_current_market_column,
     last_market_cap_col,
 ):
-    current_time = historic_dates.values[-1]
-    dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
 
+    current_time = historic_dates.values[-1]
     f = fundamental_df[fundamental_df.announce_date <= current_time]
+    register_na(f.set_index("ticker").reindex(index=tickers))
+
     f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
 
-    f = f.reindex(
-        index=pd.MultiIndex.from_product(
-            [tickers, dates], names=["ticker", "announce_date"]
-        )
-    )
-    f = f.loc[f.index.get_level_values(1).isin(historic_dates), :]
-
-    register_na(f)
-
-    columns = ["global_relative", "peers_relative"] + f.columns.to_list()
-    f = f.reindex(columns=columns)
+    f = f.reindex(columns=(["global_relative", "peers_relative"] + f.columns.to_list()))
     f = f.reset_index().set_index("ticker")
     f["global_relative"] = relative_to_global_market_column
     f["peers_relative"] = relative_to_current_market_column
     f.loc[:, "revenue":"fcf"] = (f.loc[:, "revenue":"fcf"] / last_market_cap_col).clip(
-        upper=3, lower=-3
+        lower=-3, upper=3
     )
 
     total_assets = f.loc[:, "total_assets"]
@@ -241,6 +232,14 @@ def get_3d_fundamentals(
     f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] = (
         f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] / 100
     )
+
+    dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
+    f = f.reindex(
+        index=pd.MultiIndex.from_product(
+            [tickers, dates], names=["ticker", "announce_date"]
+        )
+    )
+    f = f.loc[f.index.get_level_values(1).isin(historic_dates), :]
 
     f = f.groupby(level=0).ffill().replace(np.nan, 0)
     f = f.reset_index().set_index(["ticker", "announce_date"])
