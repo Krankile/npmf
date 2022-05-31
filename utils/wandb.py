@@ -1,10 +1,13 @@
 import pickle
-from typing import Iterable
-from .models import models
-import torch
+from typing import Iterable, Tuple
+
 import pandas as pd
+import torch
+from torch import nn
 
 import wandb as wb
+
+from .models import models
 
 
 def get_dataset(name: str, project: str):
@@ -47,7 +50,7 @@ def put_dataset(
         run.log_artifact(artifact)
 
 
-def put_models(filename: str, model_dict: dict, metadata: dict = None):
+def put_stat_models(filename: str, model_dict: dict, metadata: dict = None):
     with open(filename, mode="wb") as f:
         pickle.dump(model_dict, f)
 
@@ -58,7 +61,7 @@ def put_models(filename: str, model_dict: dict, metadata: dict = None):
         run.log_artifact(art)
 
 
-def get_models(artifact_name: str):
+def get_stat_models(artifact_name: str):
     with wb.init(project="master-test") as run:
         art = run.use_artifact(artifact_name)
         art.download()
@@ -79,12 +82,24 @@ def update_aliases(project: str, alias: str, artifacts: Iterable):
             artifact.aliases.append(alias)
     artifact.save()
 
-def get_nn_model(artifact_name, project):
+
+def get_nn_model(artifact_name: str, project: str) -> Tuple[nn.Module, dict]:
     with wb.init(project=project) as run:
-        artifact = run.use_artifact(f'krankile/{project}/{artifact_name}', type='model')
+        artifact = run.use_artifact(f"krankile/{project}/{artifact_name}", type="model")
         artifact.download()
         model_state_dict = artifact.file()
-        conf = artifact.metadata
-        model = models[conf["model"]](**conf)
+        conf: dict = artifact.metadata
+        model: nn.Module = models[conf["model"]](**conf)
         model.load_state_dict(torch.load(model_state_dict))
     return model, conf
+
+
+def put_nn_model(model: nn.Module, run) -> None:
+    filename = f"model-{run.name}.pth"
+    conf: wb.Config = run.config
+
+    torch.save(model.state_dict(), filename)
+    art = wb.Artifact(conf.model, type="model", metadata=conf.as_dict())
+    art.add_file(filename)
+
+    run.log_artifact(art)

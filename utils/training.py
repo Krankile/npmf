@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+import torch
 from tqdm import tqdm
 
 
@@ -47,7 +48,7 @@ def to_device(loader, device):
         yield map(lambda data: data.to(device), batch)
 
 
-def mape_loss(target, y_pred):
+def mape_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     mask = ~target.isnan()
     denom = mask.sum(dim=1)
     target[target != target] = 0
