@@ -1,6 +1,7 @@
 import pickle
 from typing import Iterable
-
+from .models import models
+import torch
 import pandas as pd
 
 import wandb as wb
@@ -77,3 +78,13 @@ def update_aliases(project: str, alias: str, artifacts: Iterable):
         else:
             artifact.aliases.append(alias)
     artifact.save()
+
+def get_nn_model(artifact_name, project):
+    with wb.init(project=project) as run:
+        artifact = run.use_artifact(f'krankile/{project}/{artifact_name}', type='model')
+        artifact.download()
+        model_state_dict = artifact.file()
+        conf = artifact.metadata
+        model = models[conf["model"]](**conf)
+        model.load_state_dict(torch.load(model_state_dict))
+    return model, conf
