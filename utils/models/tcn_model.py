@@ -5,7 +5,6 @@ from torch import nn
 from torch.nn.utils import weight_norm
 
 
-
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
         super(Chomp1d, self).__init__()
@@ -104,7 +103,19 @@ class TemporalConvNet(nn.Module):
 
 
 class TcnV1(nn.Module):
-    def __init__(self, input_size, output_size, num_channels, kernel_size, dropout, meta_cont_lens, meta_cat_lens, hd, meta_hd, **_):
+    def __init__(
+        self,
+        input_size,
+        out_len,
+        num_channels,
+        kernel_size,
+        dropout,
+        meta_cont_lens,
+        meta_cat_lens,
+        hd,
+        meta_hd,
+        **_
+    ):
         super().__init__()
         self.tcn = TemporalConvNet(
             input_size, num_channels, kernel_size=kernel_size, dropout=dropout
@@ -126,10 +137,10 @@ class TcnV1(nn.Module):
             nn.ReLU(),
         )
 
-        self.predict = (
+        self.predict = nn.Sequential(
             nn.Linear(num_channels[-1] + meta_hd, hd),
             nn.ReLU(),
-            nn.Linear(hd, output_size),
+            nn.Linear(hd, out_len),
         )
         # self.init_weights()
 
@@ -138,7 +149,7 @@ class TcnV1(nn.Module):
 
     def forward(self, x, cont, cat):
         y = self.tcn(x)
-        
+
         meta = self.meta_hidden(
             torch.cat(
                 [self.meta_cont(cont)]

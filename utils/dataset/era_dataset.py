@@ -1,3 +1,4 @@
+from functools import partial
 import math
 from datetime import timedelta
 from typing import Tuple
@@ -198,7 +199,7 @@ def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
 
 
 def get_3d_fundamentals(
-    fundamentals_df,
+    fundamental_df,
     tickers,
     historic_dates,
     register_na,
@@ -209,8 +210,8 @@ def get_3d_fundamentals(
     current_time = historic_dates.values[-1]
     dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
 
-    f = fundamentals_df[fundamentals_df.announce_date <= current_time]
-    f = fundamentals_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
+    f = fundamental_df[fundamental_df.announce_date <= current_time]
+    f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
 
     f = f.reindex(
@@ -375,10 +376,10 @@ class EraDataset(Dataset):
         formatted_stocks = formatted_stocks.loc[self.target.index, :]
 
         legal_fundamentals = get_3d_fundamentals(
-            fundamentals_df,
+            fundamental_df,
             tickers,
             historic_dates,
-            partial(register_na_percentage, self.na_percentage, "fundamentals"),
+            partial(register_na_percentage, self.na_percentage, "fundamental"),
             relative_to_global_market_column,
             relative_to_current_market_column,
             last_market_cap_col,

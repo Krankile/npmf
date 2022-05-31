@@ -4,6 +4,4 @@ from .tcn_model import tcn_models
 
 models = {**naive_models, **tcn_models}
 
-__all__ = [
-    models
-]
+__all__ = [models]
