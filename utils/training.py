@@ -1,3 +1,4 @@
+import math
 from typing import List
 
 import numpy as np
@@ -66,3 +67,6 @@ def mape_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
 loss_fns = dict(
     mape=mape_loss,
 )
+
+
+n_layers = lambda l, k, b: math.ceil(math.log((l - 1) * (b - 1) / ((k - 1) * 2) + 1, b))
