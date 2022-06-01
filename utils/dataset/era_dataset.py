@@ -413,15 +413,17 @@ class EraDataset(Dataset):
         legal_fundamentals = legal_fundamentals.to_numpy().reshape(
             (-1, training_window, 18)
         )
+
         macro_df = (
             macro_df.to_numpy()
             .reshape((1, training_window, 18))
             .repeat(len(tickers), axis=0)
         )
+
         self.data = (
             np.concatenate((formatted_stocks, legal_fundamentals, macro_df), axis=2)
             .transpose(0, 2, 1)
-            .astype(np.float32)
+            .astype(np.float16)
         )
 
     def __len__(self):
