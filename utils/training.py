@@ -33,7 +33,12 @@ class EarlyStop:
             self.triggers += 1
 
         if pbar is not None:
-            pbar.update_postfix({"triggers": f"{self.triggers}/{self.patience}"})
+            pbar.update_postfix(
+                {
+                    "triggers": f"{self.triggers}/{self.patience}",
+                    "best_loss": self.best_loss,
+                }
+            )
 
         return not (self.triggers < self.patience)
 

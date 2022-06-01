@@ -218,7 +218,13 @@ def get_3d_fundamentals(
     f = f.groupby(level=f.index.names).last()
 
     rest = tickers - set(f.index.get_level_values(0).unique())
-    missing = pd.DataFrame(np.nan, index=pd.MultiIndex.from_product([rest, range(4)], names=["ticker", "announce_date"]), columns=f.columns)
+    missing = pd.DataFrame(
+        np.nan,
+        index=pd.MultiIndex.from_product(
+            [rest, range(4)], names=["ticker", "announce_date"]
+        ),
+        columns=f.columns,
+    )
 
     register_na(pd.concat([f, missing], axis=0))
 
@@ -244,9 +250,7 @@ def get_3d_fundamentals(
     f = f.reset_index().set_index(["ticker", "announce_date"])
     f.index = f.index.rename("date", level=1)
     f = f.reindex(
-        index=pd.MultiIndex.from_product(
-            [tickers, dates], names=["ticker", "date"]
-        )
+        index=pd.MultiIndex.from_product([tickers, dates], names=["ticker", "date"])
     )
     f = f.loc[f.index.get_level_values(1).isin(historic_dates), :]
     f = f.groupby(level=0).ffill().replace(np.nan, 0)

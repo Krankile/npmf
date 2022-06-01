@@ -119,7 +119,10 @@ class TcnV1(nn.Module):
     ):
         super().__init__()
         self.tcn = TemporalConvNet(
-            input_size, [channels]*num_layers, kernel_size=kernel_size, dropout=dropout
+            input_size,
+            [channels] * num_layers,
+            kernel_size=kernel_size,
+            dropout=dropout,
         )
         self.meta_cont = nn.Sequential(
             nn.Linear(meta_cont_lens[0], meta_cont_lens[1]),
