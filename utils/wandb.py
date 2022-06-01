@@ -50,25 +50,30 @@ def put_dataset(
         run.log_artifact(artifact)
 
 
-def put_stat_models(filename: str, model_dict: dict, metadata: dict = None):
+def put_stat_models(filename: str, model_dict: dict, metadata: dict = None, project="master-test"):
     with open(filename, mode="wb") as f:
         pickle.dump(model_dict, f)
 
-    with wb.init(project="master-test") as run:
+    with wb.init(project=project) as run:
         art = wb.Artifact(filename.split(".")[0], type="model", metadata=metadata)
         art.add_file(filename)
 
         run.log_artifact(art)
 
 
-def get_stat_models(artifact_name: str):
-    with wb.init(project="master-test") as run:
+def get_stat_models(artifact_name: str, project="master-test", metadata=False):
+    with wb.init(project=project) as run:
         art = run.use_artifact(artifact_name)
         art.download()
         filename = art.file()
 
     with open(filename, mode="rb") as f:
-        return pickle.load(f)
+        models = pickle.load(f)
+
+    if metadata:
+        return models, art.metadata
+    
+    return models
 
 
 def update_aliases(project: str, alias: str, artifacts: Iterable):
