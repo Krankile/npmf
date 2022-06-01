@@ -404,7 +404,7 @@ class EraDataset(Dataset):
         macro_df = get_macro_df(macro_df, historic_dates)
 
         self.data_fields = (
-            formatted_stocks.columns.to_list()
+            ["market_cap"]
             + legal_fundamentals.columns.to_list()
             + macro_df.columns.to_list()
         )
