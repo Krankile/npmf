@@ -89,6 +89,8 @@ def get_nn_model(artifact_name: str, project: str) -> Tuple[nn.Module, dict]:
         artifact.download()
         model_state_dict = artifact.file()
         conf: dict = artifact.metadata
+        conf['num_layers'] = 7
+        conf['channels'] = 256
         model: nn.Module = models[conf["model"]](**conf)
         model.load_state_dict(torch.load(model_state_dict))
     return model, conf
