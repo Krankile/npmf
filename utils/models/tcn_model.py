@@ -192,7 +192,7 @@ class TcnV3(TcnV1):
         
         self.predict = nn.Sequential(
             nn.Linear(channels*self.tcn_steps + meta_hd, hd),
-            activations[activation],
+            activations[activation](),
             nn.Linear(hd, out_len),
         )
         
