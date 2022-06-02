@@ -204,7 +204,7 @@ class TcnV3(TcnV1):
         )
 
     def forward(self, x, cont, cat):
-        meta = self.meta_embedding(self, cont, cat)
+        meta = self.meta_embedding(cont, cat)
         y = self.tcn(x)[:, :, : self.tcn_steps].flatten(startdim=1)
         y = self.predict(torch.cat([y, meta], dim=1))
 
