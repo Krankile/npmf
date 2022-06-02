@@ -409,6 +409,8 @@ class EraDataset(Dataset):
             + macro_df.columns.to_list()
         )
 
+        self.tickers = formatted_stocks.index.to_list()
+
         formatted_stocks = formatted_stocks.to_numpy().reshape((-1, training_window, 1))
         legal_fundamentals = legal_fundamentals.to_numpy().reshape(
             (-1, training_window, 18)
