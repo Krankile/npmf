@@ -423,7 +423,7 @@ class EraDataset(Dataset):
         self.data = (
             np.concatenate((formatted_stocks, legal_fundamentals, macro_df), axis=2)
             .transpose(0, 2, 1)
-            .astype(np.float16)
+            .astype(np.float32)
         )
 
     def __len__(self):
