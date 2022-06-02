@@ -186,7 +186,7 @@ class TcnV2(TcnV1):
 
 class TcnV3(TcnV1):
     def __init__(self, channels, meta_hd, hd, activation, out_len, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(channels, meta_hd, hd, activation, out_len, **kwargs)
 
         self.tcn_steps = 10
         
