@@ -4,6 +4,8 @@ import torch
 from torch import nn
 from torch.nn.utils import weight_norm
 
+from ..training import activations
+
 
 class Chomp1d(nn.Module):
     def __init__(self, chomp_size):
@@ -115,6 +117,7 @@ class TcnV1(nn.Module):
         meta_cat_lens,
         hd,
         meta_hd,
+        activation,
         **_
     ):
         super().__init__()
@@ -126,7 +129,7 @@ class TcnV1(nn.Module):
         )
         self.meta_cont = nn.Sequential(
             nn.Linear(meta_cont_lens[0], meta_cont_lens[1]),
-            nn.ReLU(),
+            activations[activation],
         )
 
         self.meta_cat = nn.ModuleList(
@@ -138,23 +141,22 @@ class TcnV1(nn.Module):
                 meta_cont_lens[1] + sum(map(itemgetter(1), meta_cat_lens)),
                 meta_hd,
             ),
-            nn.ReLU(),
+            activations[activation],
         )
 
         self.predict = nn.Sequential(
             nn.Linear(channels + meta_hd, hd),
-            nn.ReLU(),
+            activations[activation],
             nn.Linear(hd, out_len),
         )
+
         self.init_weights()
 
     def init_weights(self):
         self.predict.weight.data.normal_(0, 0.01)
 
-    def forward(self, x, cont, cat):
-        y = self.tcn(x)
-
-        meta = self.meta_hidden(
+    def meta_embeddig(self, cont, cat):
+        return self.meta_hidden(
             torch.cat(
                 [self.meta_cont(cont)]
                 + [emb(cat[:, i]) for i, emb in enumerate(self.meta_cat)],
@@ -162,22 +164,46 @@ class TcnV1(nn.Module):
             )
         )
 
+    def forward(self, x, cont, cat):
+        y = self.tcn(x)
+
+        meta = self.meta_embeddig(self, cont, cat)
+
         y = self.predict(torch.cat([y[:, :, -1], meta], dim=1))
 
         return y
 
 
 class TcnV2(TcnV1):
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def forward(self, x, cont, cat):
         y = super().forward(x, cont, cat)
 
         return y + 1
+
+
+class TcnV3(TcnV1):
+    def __init__(self, channels, meta_hd, hd, activation, out_len, **kwargs):
+        super().__init__(**kwargs)
+
+        self.tcn_steps = 10
+        
+        self.predict = nn.Sequential(
+            nn.Linear(channels*self.tcn_steps + meta_hd, hd),
+            activations[activation],
+            nn.Linear(hd, out_len),
+        )
+        
+        self.init_weights()
+
+    def forward(self, x, cont, cat):
+        meta = self.meta_embeddig(self, cont, cat)
+        y = self.tcn(x)[:, :, :-10].flatten(startdim=1)
+        y = self.predict(torch.cat([y, meta], dim=1))
+
+        return y
 
 
 tcn_models = dict(
