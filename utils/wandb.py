@@ -1,9 +1,11 @@
+from operator import itemgetter
 import pickle
 from typing import Iterable, Tuple
 
 import pandas as pd
 import torch
 from torch import nn
+from torch.nn.utils import weight_norm
 
 import wandb as wb
 
@@ -256,9 +258,6 @@ class TcnV2(nn.Module):
         return y
 
 
-tcn_models = dict(
-    TcnV1=TcnV1,
-)
 def get_tcnn_model(artifact_name: str, project: str) -> Tuple[nn.Module, dict]:
     with wb.init(project=project) as run:
         artifact = run.use_artifact(f"krankile/{project}/{artifact_name}", type="model")
