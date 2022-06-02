@@ -150,7 +150,7 @@ class TcnV1(nn.Module):
             nn.Linear(hd, out_len),
         )
 
-        self.init_weights()
+        # self.init_weights()
 
     def init_weights(self):
         self.predict.weight.data.normal_(0, 0.01)
