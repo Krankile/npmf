@@ -196,7 +196,6 @@ class TcnV3(TcnV1):
             nn.Linear(hd, out_len),
         )
         
-        self.init_weights()
 
     def forward(self, x, cont, cat):
         meta = self.meta_embeddig(self, cont, cat)
