@@ -155,7 +155,7 @@ class TcnV1(nn.Module):
     def init_weights(self):
         self.predict.weight.data.normal_(0, 0.01)
 
-    def meta_embeddig(self, cont, cat):
+    def meta_embedding(self, cont, cat):
         return self.meta_hidden(
             torch.cat(
                 [self.meta_cont(cont)]
@@ -167,7 +167,7 @@ class TcnV1(nn.Module):
     def forward(self, x, cont, cat):
         y = self.tcn(x)
 
-        meta = self.meta_embeddig(self, cont, cat)
+        meta = self.meta_embedding(cont, cat)
 
         y = self.predict(torch.cat([y[:, :, -1], meta], dim=1))
 
