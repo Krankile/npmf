@@ -129,7 +129,7 @@ class TcnV1(nn.Module):
         )
         self.meta_cont = nn.Sequential(
             nn.Linear(meta_cont_lens[0], meta_cont_lens[1]),
-            activations[activation],
+            activations[activation](),
         )
 
         self.meta_cat = nn.ModuleList(
@@ -141,12 +141,12 @@ class TcnV1(nn.Module):
                 meta_cont_lens[1] + sum(map(itemgetter(1), meta_cat_lens)),
                 meta_hd,
             ),
-            activations[activation],
+            activations[activation](),
         )
 
         self.predict = nn.Sequential(
             nn.Linear(channels + meta_hd, hd),
-            activations[activation],
+            activations[activation](),
             nn.Linear(hd, out_len),
         )
 
