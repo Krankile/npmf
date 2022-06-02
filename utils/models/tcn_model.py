@@ -146,7 +146,7 @@ class TcnV1(nn.Module):
             nn.ReLU(),
             nn.Linear(hd, out_len),
         )
-        # self.init_weights()
+        self.init_weights()
 
     def init_weights(self):
         self.predict.weight.data.normal_(0, 0.01)
@@ -167,6 +167,20 @@ class TcnV1(nn.Module):
         return y
 
 
+class TcnV2(TcnV1):
+    def __init__(
+        self,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+
+        return y + 1
+
+
 tcn_models = dict(
     TcnV1=TcnV1,
+    TcnV2=TcnV2,
 )
