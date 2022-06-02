@@ -209,4 +209,5 @@ class TcnV3(TcnV1):
 tcn_models = dict(
     TcnV1=TcnV1,
     TcnV2=TcnV2,
+    TcnV3=TcnV3,
 )
