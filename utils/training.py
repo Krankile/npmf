@@ -64,6 +64,16 @@ def mape_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     return l
 
 
+def mape_loss_2(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    mask = (~target.isnan()) & (target.abs() >= 1e-2)
+    denom = mask.sum(dim=1)
+    target[target != target] = 0
+    l = (
+        (((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom
+    ).mean()
+    return l
+
+
 loss_fns = dict(
     mape=mape_loss,
 )

@@ -50,7 +50,9 @@ def put_dataset(
         run.log_artifact(artifact)
 
 
-def put_stat_models(filename: str, model_dict: dict, metadata: dict = None, project="master-test"):
+def put_stat_models(
+    filename: str, model_dict: dict, metadata: dict = None, project="master-test"
+):
     with open(filename, mode="wb") as f:
         pickle.dump(model_dict, f)
 
@@ -72,7 +74,7 @@ def get_stat_models(artifact_name: str, project="master-test", metadata=False):
 
     if metadata:
         return models, art.metadata
-    
+
     return models
 
 
@@ -95,7 +97,14 @@ def get_nn_model(artifact_name: str, project: str) -> Tuple[nn.Module, dict]:
         model_state_dict = artifact.file()
         conf: dict = artifact.metadata
         model: nn.Module = models[conf["model"]](**conf)
-        model.load_state_dict(torch.load(model_state_dict, map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu")))
+        model.load_state_dict(
+            torch.load(
+                model_state_dict,
+                map_location=torch.device(
+                    "cuda" if torch.cuda.is_available() else "cpu"
+                ),
+            )
+        )
     return model, conf
 
 
