@@ -82,11 +82,19 @@ def mse_loss_2(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     l = ((((y_pred - target) ** 2 * mask)).sum(dim=1) / denom).mean()
     return l
 
+def volatility_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    mask = (~target.isnan()) & (target.abs() >= 1e-2)
+    target[target != target] = 0 
+    denom = mask.sum(dim=1)
+    l = ((torch.sum((target-torch.sum(target, dim=1)/denom)**2, dim=1)*mask/denom - y_pred)**2).mean()
+    return l
+
 
 loss_fns = dict(
     mape=mape_loss,
     mape_2=mape_loss_2,
     mse_2=mse_loss_2,
+    vola=volatility_loss,
 )
 
 
