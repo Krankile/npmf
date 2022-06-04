@@ -110,6 +110,7 @@ activations = dict(
     relu=nn.ReLU,
     elu=nn.ELU,
     prelu=nn.PReLU,
+    leaky=nn.LeakyReLU,
 )
 
 n_layers = lambda l, k, b: math.ceil(math.log((l - 1) * (b - 1) / ((k - 1) * 2) + 1, b))
