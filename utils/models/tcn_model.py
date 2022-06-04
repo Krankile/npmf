@@ -317,9 +317,30 @@ class TcnV4(TcnV1):
         )
 
 
+class TcnV5(TcnV1):
+    def __init__(self, channels, meta_hd, activation, out_len, hd, **kwargs):
+        super().__init__(
+            channels=channels,
+            meta_hd=meta_hd,
+            activation=activation,
+            out_len=out_len,
+            hd=hd,
+            **kwargs
+        )
+
+        self.predict = nn.Sequential(
+            nn.Linear(channels * self.tcn_steps + meta_hd, hd),
+            activations[activation](),
+            nn.Linear(hd, hd),
+            activations[activation](),
+            nn.Linear(hd, out_len),
+        )
+
+
 tcn_models = dict(
     TcnV1=TcnV1,
     TcnV2=TcnV2,
     TcnV3=TcnV3,
     TcnV4=TcnV4,
+    TcnV5=TcnV5,
 )
