@@ -125,7 +125,7 @@ def volatility_loss_diff(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Te
     #y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1} 
     target_ = target.diff()*(target[:,:-1]**(-1))
     
-    mask = (~target_.isnan()) & (target_.abs() >= 1e-3)
+    mask = ((~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10))
     target_[target_ != target_] = 0 
     denom = mask.sum(dim=1, keepdim=True)
     l = ((torch.sum((target_-torch.sum(target_, dim=1, keepdim=True)/denom)**2, dim=1, keepdim=True)*mask/denom - y_pred).abs()).mean()
@@ -135,7 +135,7 @@ def volatility_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torc
     #y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1} 
     target_ = target.diff()*(target[:,:-1]**(-1))
     
-    mask = (~target_.isnan()) & (target_.abs() >= 1e-3)
+    mask = ((~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10))
     target_[target_ != target_] = 0 
     denom = mask.sum(dim=1, keepdim=True)
     l = ((torch.sum((target_-torch.sum(target_, dim=1, keepdim=True)/denom)**2, dim=1, keepdim=True)*mask/denom - y_pred).abs()).mean()
