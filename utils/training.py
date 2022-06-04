@@ -123,7 +123,7 @@ def volatility_loss_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Ten
 
 def volatility_loss_diff(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     #y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1} 
-    target_ = target.diff()*(target[:,:-1]**(-1))
+    target_ = torch.nan_to_num(target.diff()*(target[:,:-1]**(-1)), posinf=np.nan, neginf=np.nan)
     
     mask = ((~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10))
     target_[target_ != target_] = 0 
@@ -133,7 +133,7 @@ def volatility_loss_diff(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Te
 
 def volatility_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     #y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1} 
-    target_ = target.diff()*(target[:,:-1]**(-1))
+    target_ = torch.nan_to_num(target.diff()*(target[:,:-1]**(-1)), posinf=np.nan, neginf=np.nan)
     
     mask = ((~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10))
     target_[target_ != target_] = 0 
