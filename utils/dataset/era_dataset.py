@@ -341,7 +341,6 @@ class EraDataset(Dataset):
         current_time: pd.Timestamp,
         training_window: int,
         target_window: int,
-        n_reports: int,
         stock_df: pd.DataFrame,
         fundamental_df: pd.DataFrame,
         meta_df: pd.DataFrame,
