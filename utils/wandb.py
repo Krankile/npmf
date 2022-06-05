@@ -45,6 +45,7 @@ def put_dataset(
     drop_index: bool = True,
     description: str = None,
     metadata: dict = None,
+    run=None,
 ):
     df.reset_index(drop=drop_index).to_feather(filename)
 
@@ -53,8 +54,11 @@ def put_dataset(
     )
     artifact.add_file(filename)
 
-    with wb.init(project=project) as run:
-        run.log_artifact(artifact)
+    r = run if run is not None else wb.init(project=project)
+    run.log_artifact(artifact)
+
+    if run is None:
+        r.finish()
 
 
 def put_stat_models(
