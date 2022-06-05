@@ -1,5 +1,5 @@
 import random
-from copyreg import pickle
+import pickle
 from glob import glob
 
 import pandas as pd
