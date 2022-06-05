@@ -21,14 +21,19 @@ def get_dataset(name: str, project: str):
         return pd.read_feather(filepath)
 
 
-def get_datasets(names: Iterable[str], project: str):
+def get_datasets(names: Iterable[str], project: str, run=None):
+    r = run if run is not None else wb.init(project=project)
+
     dfs = []
-    with wb.init(project=project) as run:
-        for name in names:
-            art = run.use_artifact(name)
-            art.download()
-            df = pd.read_feather(art.file())
-            dfs.append(df)
+    for name in names:
+        art = r.use_artifact(name)
+        art.download()
+        df = pd.read_feather(art.file())
+        dfs.append(df)
+
+    if run is None:
+        r.finish()
+
     return dfs
 
 
@@ -112,13 +117,12 @@ def get_nn_model(artifact_name: str, project: str, run=None) -> Tuple[nn.Module,
     model.load_state_dict(
         torch.load(
             model_state_dict,
-            map_location=torch.device(
-                "cuda" if torch.cuda.is_available() else "cpu"
-            ),
+            map_location=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         )
     )
     if run is None:
         r.finish()
+
     return model, conf
 
 
