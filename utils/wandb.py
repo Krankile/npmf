@@ -101,21 +101,24 @@ class Chomp1d(nn.Module):
         return x[:, :, : -self.chomp_size].contiguous()
 
 
-def get_nn_model(artifact_name: str, project: str) -> Tuple[nn.Module, dict]:
-    with wb.init(project=project) as run:
-        artifact = run.use_artifact(f"krankile/{project}/{artifact_name}", type="model")
-        artifact.download()
-        model_state_dict = artifact.file()
-        conf: dict = artifact.metadata
-        model: nn.Module = models[conf["model"]](**conf)
-        model.load_state_dict(
-            torch.load(
-                model_state_dict,
-                map_location=torch.device(
-                    "cuda" if torch.cuda.is_available() else "cpu"
-                ),
-            )
+def get_nn_model(artifact_name: str, project: str, run=None) -> Tuple[nn.Module, dict]:
+    r = run if run is not None else wb.init(project=project)
+
+    artifact = r.use_artifact(f"krankile/{project}/{artifact_name}", type="model")
+    artifact.download()
+    model_state_dict = artifact.file()
+    conf: dict = artifact.metadata
+    model: nn.Module = models[conf["model"]](**conf)
+    model.load_state_dict(
+        torch.load(
+            model_state_dict,
+            map_location=torch.device(
+                "cuda" if torch.cuda.is_available() else "cpu"
+            ),
         )
+    )
+    if run is None:
+        r.finish()
     return model, conf
 
 
