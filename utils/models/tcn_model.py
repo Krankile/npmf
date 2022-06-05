@@ -79,7 +79,7 @@ class TemporalBlock(nn.Module):
 
 class TemporalBlockNoWeightNorm(nn.Module):
     def __init__(
-        self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2
+        self, n_inputs, n_outputs, kernel_size, stride, dilation, padding, dropout=0.2,
     ):
         super(TemporalBlockNoWeightNorm, self).__init__()
         self.conv1 = nn.Conv1d(
@@ -121,13 +121,6 @@ class TemporalBlockNoWeightNorm(nn.Module):
             nn.Conv1d(n_inputs, n_outputs, 1) if n_inputs != n_outputs else None
         )
         self.relu = nn.ReLU()
-        self.init_weights()
-
-    def init_weights(self):
-        self.conv1.weight.data.normal_(0, 0.01)
-        self.conv2.weight.data.normal_(0, 0.01)
-        if self.downsample is not None:
-            self.downsample.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
         out = self.net(x)
@@ -235,11 +228,6 @@ class TcnV1(nn.Module):
             nn.Linear(hd, out_len),
         )
 
-        # self.init_weights()
-
-    def init_weights(self):
-        self.predict.weight.data.normal_(0, 0.01)
-
     def meta_embedding(self, cont, cat):
         return self.meta_hidden(
             torch.cat(
@@ -290,7 +278,7 @@ class TcnV3(TcnV1):
 
     def forward(self, x, cont, cat):
         meta = self.meta_embedding(cont, cat)
-        y = self.tcn(x)[:, :, : self.tcn_steps].flatten(start_dim=1)
+        y = self.tcn(x)[:, :, -self.tcn_steps: ].flatten(start_dim=1)
         y = self.predict(torch.cat([y, meta], dim=1))
 
         return y
@@ -341,6 +329,6 @@ tcn_models = dict(
     TcnV1=TcnV1,
     TcnV2=TcnV2,
     TcnV3=TcnV3,
-    TcnV4=TcnV4,
+    TcnV4=TcnV4,  # Test this now
     TcnV5=TcnV5,
 )
