@@ -19,34 +19,48 @@ class TqdmPostFix(tqdm):
 
 
 class EarlyStop:
-    def __init__(self, patience: int, min_delta: float) -> None:
+    def __init__(
+        self, patience: int, min_delta: float, model: nn.Module = None, pbar=None
+    ) -> None:
         self.patience = patience
         self.min_delta = min_delta
 
+        self.model = model
+        self.pbar = pbar
+
         self.reset()
 
-    def __call__(self, epoch_loss: List[float], pbar: TqdmPostFix = None) -> bool:
+    def __call__(self, epoch_loss: List[float]) -> bool:
         loss = np.mean(epoch_loss)
 
         if loss < self.best_loss - self.min_delta:
             self.best_loss = loss
             self.triggers = 0
+
+            if self.model is not None:
+                self.best_wts = self.model.state_dict()
         else:
             self.triggers += 1
 
-        if pbar is not None:
-            pbar.update_postfix(
+        if self.pbar is not None:
+            self.pbar.update_postfix(
                 {
                     "triggers": f"{self.triggers}/{self.patience}",
                     "best_loss": self.best_loss,
                 }
             )
 
-        return not (self.triggers < self.patience)
+        stop_era = self.triggers >= self.patience
+
+        if stop_era and self.model is not None:
+            self.model.load_state_dict(self.best_wts)
+
+        return stop_era
 
     def reset(self):
         self.best_loss = float("inf")
         self.triggers = 0
+        self.best_wts = None
         return self
 
 
