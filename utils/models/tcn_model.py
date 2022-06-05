@@ -65,6 +65,7 @@ class TemporalBlock(nn.Module):
         self.relu = nn.ReLU()
         self.init_weights()
 
+
     def init_weights(self):
         self.conv1.weight.data.normal_(0, 0.01)
         self.conv2.weight.data.normal_(0, 0.01)
@@ -336,16 +337,35 @@ class TcnV5(TcnV1):
             nn.Linear(hd, out_len),
         )
 
-class TcnV6(TcnV1):
-
+class VarTcnV1(TcnV1):
     def forward(self, x, cont, cat):
         y = super().forward(x, cont, cat)
         y = nn.functional.relu(y)
         return y
 
+class VarTcnV2(TcnV2):
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+        y = nn.functional.relu(y)
+        return y
 
+class VarTcnV3(TcnV3):
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+        y = nn.functional.relu(y)
+        return y
 
+class VarTcnV4(TcnV4):
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+        y = nn.functional.relu(y)
+        return y
 
+class VarTcnV5(TcnV5):
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+        y = nn.functional.relu(y)
+        return y
 
 tcn_models = dict(
     TcnV1=TcnV1,
@@ -353,5 +373,9 @@ tcn_models = dict(
     TcnV3=TcnV3,
     TcnV4=TcnV4,
     TcnV5=TcnV5,
-    TcnV6=TcnV6,
+    VarTcnV1=VarTcnV1,
+    VarTcnV2=VarTcnV2,
+    VarTcnV3=VarTcnV3,
+    VarTcnV4=VarTcnV4,
+    VarTcnV5=VarTcnV5,
 )
