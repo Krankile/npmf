@@ -336,6 +336,16 @@ class TcnV5(TcnV1):
             nn.Linear(hd, out_len),
         )
 
+class TcnV6(TcnV1):
+
+    def forward(self, x, cont, cat):
+        y = super().forward(x, cont, cat)
+        y = nn.functional.relu(y)
+        return y
+
+
+
+
 
 tcn_models = dict(
     TcnV1=TcnV1,
@@ -343,4 +353,5 @@ tcn_models = dict(
     TcnV3=TcnV3,
     TcnV4=TcnV4,
     TcnV5=TcnV5,
+    TcnV6=TcnV6,
 )
