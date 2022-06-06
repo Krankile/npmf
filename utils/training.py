@@ -188,56 +188,43 @@ def volatility_loss_diff_mse(
 
 def std_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     # y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1}
-    target_ = torch.nan_to_num(
-        target.diff() * (target[:, :-1] ** (-1)), posinf=np.nan, neginf=np.nan
-    )
+    target_ = target.diff() * (target[:, :-1] ** (-1))
 
-    mask = (~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10)
-    target_[target_ != target_] = 0
+    mask = (~target_.isnan()) & (target_.abs() <= 10)
+    mask2 = mask.sum(dim=1, keepdim=True) >= 2
+
+    target_[~mask] = 0
+
     denom = mask.sum(dim=1, keepdim=True)
-    l = (
-        (
-            (
-                torch.sum(
-                    (target_ - torch.sum(target_, dim=1, keepdim=True) / denom) ** 2,
-                    dim=1,
-                    keepdim=True,
-                )
-                * mask
-                / denom
-            )
-            ** (1 / 2)
-            - y_pred
-        )
-        ** 2
-    ).mean()
+    denom2 = mask2.sum(dim=0).item()
+
+    l=((torch.nan_to_num((torch.sum(
+        ((target_ - torch.sum(target_, dim=1, keepdim=True) / denom)*mask) ** 2,
+        dim=1,
+        keepdim=True,
+    )/denom)**(1/2)-y_pred)*mask2)**2).sum()/denom2
+    
     return l
 
 
 def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     # y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1}
-    target_ = torch.nan_to_num(
-        target.diff() * (target[:, :-1] ** (-1)), posinf=np.nan, neginf=np.nan
-    )
+    target_ = target.diff() * (target[:, :-1] ** (-1))
 
-    mask = (~target_.isnan()) & (target_.abs() <= 10) & (target_.abs() >= -10)
-    target_[target_ != target_] = 0
+    mask = (~target_.isnan()) & (target_.abs() <= 10)
+    mask2 = mask.sum(dim=1, keepdim=True) >= 2
+
+    target_[~mask] = 0
+
     denom = mask.sum(dim=1, keepdim=True)
-    l = (
-        (
-            (
-                torch.sum(
-                    (target_ - torch.sum(target_, dim=1, keepdim=True) / denom) ** 2,
-                    dim=1,
-                    keepdim=True,
-                )
-                * mask
-                / denom
-            )
-            ** (1 / 2)
-            - y_pred
-        ).abs()
-    ).mean()
+    denom2 = mask2.sum(dim=0).item()
+
+    l=((torch.nan_to_num((torch.sum(
+        ((target_ - torch.sum(target_, dim=1, keepdim=True) / denom)*mask) ** 2,
+        dim=1,
+        keepdim=True,
+    )/denom)**(1/2)-y_pred)*mask2).abs()).sum()/denom2
+    
     return l
 
 
