@@ -191,11 +191,9 @@ def std_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     target_ = target.diff() * (target[:, :-1] ** (-1))
 
     mask = (~target_.isnan()) & (target_.abs() <= 10)
-
     mask2 = mask.sum(dim=1, keepdim=True) >= 2
 
     target_[~mask] = 0
-    print(target_)
 
     denom = mask.sum(dim=1, keepdim=True)
     denom2 = mask2.sum(dim=0).item()
@@ -214,11 +212,9 @@ def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     target_ = target.diff() * (target[:, :-1] ** (-1))
 
     mask = (~target_.isnan()) & (target_.abs() <= 10)
-
     mask2 = mask.sum(dim=1, keepdim=True) >= 2
 
     target_[~mask] = 0
-    print(target_)
 
     denom = mask.sum(dim=1, keepdim=True)
     denom2 = mask2.sum(dim=0).item()
