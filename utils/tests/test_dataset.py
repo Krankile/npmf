@@ -1,7 +1,7 @@
 from pathlib import Path
 import pandas as pd
 
-from utils.dataset import (
+from utils.dataset.timedelta_dataset import (
     get_global_local_column,
     get_stocks_in_timeframe,
     get_historic_dates,

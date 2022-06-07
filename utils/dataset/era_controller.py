@@ -5,6 +5,8 @@ from glob import glob
 import pandas as pd
 from torch.utils.data import ConcatDataset, DataLoader
 
+from .utils import clamp_and_slice
+
 from ...utils import Problem
 
 from .era_dataset import EraDataset
@@ -73,18 +75,7 @@ class EraController:
                 self.conf.forecast_problem,
             )
 
-        if self.conf.get("clamp") is not None:
-            clamp = self.conf.clamp
-            dataset.data = dataset.data.clip(-clamp, clamp)
-
-        if self.conf.get("feature_subset") is not None:
-            dataset.data = dataset.data[:, self.conf.feature_subset, :]
-
-        if (
-            self.conf.forecast_problem == Problem.fundamentals.name
-            and self.conf.get("fundamental_targets") is not None
-        ):
-            dataset.target = dataset.target[:, self.conf.fundamental_targets]
+        dataset = clamp_and_slice(dataset, conf=self.conf)
 
         return dataset
 
