@@ -1,4 +1,3 @@
-from ctypes import Union
 from functools import partial
 import math
 from datetime import timedelta
@@ -255,7 +254,7 @@ def get_target(
     forecast_problem: str,
 ):
 
-    if forecast_problem == Problem.market_cap.name:
+    if forecast_problem == Problem.fundamentals:
         return fundamental_target(fundamental_df, tickers, target_dates, relatives)
 
     return stock_target(stock_df, tickers, target_dates, relatives.last)
