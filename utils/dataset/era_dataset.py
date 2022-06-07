@@ -283,7 +283,13 @@ class EraDataset(Dataset):
 
         # Get stock df
         legal_stock_df = (
-            stock_df.astype(fundamental_types)
+            stock_df.astype(
+                {
+                    col: fundamental_types[col]
+                    for col in stock_df.columns
+                    if col in fundamental_types
+                }
+            )
             .copy()
             .loc[stock_df.date.isin(historic_dates), :]
         )

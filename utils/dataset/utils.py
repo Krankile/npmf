@@ -7,4 +7,3 @@ def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame
 
 
 RelativeCols = namedtuple("RelativeCols", field_names="global_ current last")
-
