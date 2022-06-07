@@ -239,9 +239,10 @@ def fundamental_target(fundamental_df, tickers, target_dates, relatives: Relativ
     
     targets = targets.loc[~constant]
     targets = normalize_fundamentals(targets, relatives)
-    targets = targets.drop(columns=["date", "announce_date"])
-
+    
     tickers = set(targets.index.unique()) & tickers
+    targets = targets.drop(columns=["date", "announce_date"]).loc[tickers, :]
+
     return targets, tickers
 
 
