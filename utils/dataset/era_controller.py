@@ -58,7 +58,7 @@ class EraController:
     def get_dataset(self, date):
         if self.path_dict is not None:
             with open(self.path_dict[str(date)], "rb") as f:
-                dataset_infront = pickle.load(f)
+                dataset_infront: EraDataset = pickle.load(f)
         else:
             dataset_infront = EraDataset(
                 date,
@@ -70,9 +70,17 @@ class EraController:
                 self.meta_df,
                 self.macro_df,
             )
+
+        if self.conf.get("clamp") is not None:
+            clamp = self.conf.clamp
+            dataset_infront.data = dataset_infront.data.clip(-clamp, clamp)
+
+        if self.conf.get("feature_subset") is not None:
+            dataset_infront.data = dataset_infront.data[:, self.conf.feature_subset, :]
+
         return dataset_infront
 
-    def date_to_loader(self, date):
+    def date_to_loader(self, date) -> DataLoader:
         dataset_infront = self.get_dataset(date)
 
         loader = DataLoader(

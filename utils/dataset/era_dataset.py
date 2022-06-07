@@ -421,7 +421,7 @@ class EraDataset(Dataset):
             .repeat(len(tickers), axis=0)
         )
 
-        self.data = (
+        self.data: np.ndarray = (
             np.concatenate((formatted_stocks, legal_fundamentals, macro_df), axis=2)
             .transpose(0, 2, 1)
             .astype(np.float32)
@@ -434,7 +434,7 @@ class EraDataset(Dataset):
     def n_features(self):
         return self.data.shape[1]
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
 
         return (
             self.data[idx, :, :],
