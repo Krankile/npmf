@@ -201,6 +201,7 @@ def get_naive_pred(data, target, device, conf):
         return data[:, 0, :-20].std(dim=1, keepdim=True)
 
     if conf.forecast_problem == Problem.fundamentals.name:
-        return data[:, :, -1]
+        subset = conf.get("fundamental_targets") or slice(1, 18 + 1)
+        return data[:, subset, -1]
 
     raise ValueError("Invalid problem passed")

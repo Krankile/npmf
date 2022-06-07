@@ -255,9 +255,6 @@ class TcnV1(nn.Module):
 
 
 class TcnV2(TcnV1):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
     def forward(self, x, cont, cat):
         y = super().forward(x, cont, cat)
 
