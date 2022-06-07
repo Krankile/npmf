@@ -229,13 +229,14 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col):
 def fundamental_target(fundamental_df, tickers, target_dates, relatives: RelativeCols):
 
     targets: pd.DataFrame = (
-        fundamental_df[fundamental_df.date <= target_dates[-1]].groupby("ticker").last()
+        fundamental_df[fundamental_df.date <= target_dates[-1]].dropna(how="all").groupby("ticker").last()
     )
     last: pd.DataFrame = (
-        fundamental_df[fundamental_df.date < target_dates[0]].groupby("ticker").last()
+        fundamental_df[fundamental_df.date < target_dates[0]].dropna(how="all").groupby("ticker").last()
     )
 
     constant = targets.replace(np.nan, 0).eq(last.replace(np.nan, 0)).all(axis=1)
+    
     targets = targets.loc[~constant]
     targets = normalize_fundamentals(targets, relatives)
     targets = targets.drop(columns=["date", "announce_date"])

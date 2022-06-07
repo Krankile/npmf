@@ -198,7 +198,7 @@ def get_naive_pred(data, target, device, conf):
         return torch.ones(target.shape, device=device)
 
     if conf.forecast_problem == Problem.volatility.name:
-        return data[:, 0, :-20].std(dim=1, keepdim=True)
+        return data[:, 0, -conf.forecast_w:].std(dim=1, keepdim=True)
 
     if conf.forecast_problem == Problem.fundamentals.name:
         subset = conf.get("fundamental_targets") or slice(1, 18 + 1)
