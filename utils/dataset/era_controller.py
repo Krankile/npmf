@@ -5,6 +5,8 @@ from glob import glob
 import pandas as pd
 from torch.utils.data import ConcatDataset, DataLoader
 
+from ...utils import Problem
+
 from .era_dataset import EraDataset
 
 
@@ -58,9 +60,9 @@ class EraController:
     def get_dataset(self, date):
         if self.path_dict is not None:
             with open(self.path_dict[str(date)], "rb") as f:
-                dataset_infront: EraDataset = pickle.load(f)
+                dataset: EraDataset = pickle.load(f)
         else:
-            dataset_infront = EraDataset(
+            dataset = EraDataset(
                 date,
                 self.conf.training_w,
                 self.conf.forecast_w,
@@ -73,12 +75,18 @@ class EraController:
 
         if self.conf.get("clamp") is not None:
             clamp = self.conf.clamp
-            dataset_infront.data = dataset_infront.data.clip(-clamp, clamp)
+            dataset.data = dataset.data.clip(-clamp, clamp)
 
         if self.conf.get("feature_subset") is not None:
-            dataset_infront.data = dataset_infront.data[:, self.conf.feature_subset, :]
+            dataset.data = dataset.data[:, self.conf.feature_subset, :]
 
-        return dataset_infront
+        if (
+            self.conf.forecast_problem == Problem.fundamentals.name
+            and self.conf.get("fundamental_targets") is not None
+        ):
+            dataset.target = dataset.target[:, self.conf.fundamental_targets]
+
+        return dataset
 
     def date_to_loader(self, date) -> DataLoader:
         dataset_infront = self.get_dataset(date)
