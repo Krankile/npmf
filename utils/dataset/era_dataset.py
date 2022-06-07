@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.preprocessing import minmax_scale
 from torch.utils.data import Dataset
 
-from ..dataset import register_na_percentage, RelativeCols
+from ...utils.dataset import register_na_percentage, RelativeCols
 
 from ...utils import Problem
 
