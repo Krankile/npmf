@@ -55,7 +55,7 @@ def put_dataset(
     artifact.add_file(filename)
 
     r = run if run is not None else wb.init(project=project)
-    run.log_artifact(artifact)
+    r.log_artifact(artifact)
 
     if run is None:
         r.finish()
