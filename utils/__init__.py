@@ -8,7 +8,8 @@ class VolLoss:
 
 
 class FundamentalLoss:
-    pass
+    mse = "mse_2"
+    mape = "mape_2"
 
 
 class MarketCap:
