@@ -1,15 +1,13 @@
-import random
 import pickle
+import random
 from glob import glob
 
 import pandas as pd
 from torch.utils.data import ConcatDataset, DataLoader
 
-from .utils import clamp_and_slice
-
 from ...utils import Problem
-
 from .era_dataset import EraDataset
+from .utils import clamp_and_slice
 
 
 class EraController:

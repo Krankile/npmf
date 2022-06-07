@@ -1,6 +1,6 @@
-from functools import partial
 import math
 from datetime import timedelta
+from functools import partial
 from typing import Tuple
 
 import numpy as np
@@ -8,10 +8,8 @@ import pandas as pd
 from sklearn.preprocessing import minmax_scale
 from torch.utils.data import Dataset
 
-from ...utils.dataset.utils import register_na_percentage, RelativeCols
-
 from ...utils import Problem
-
+from ...utils.dataset.utils import RelativeCols, register_na_percentage
 from ..dtypes import fundamental_types
 
 
@@ -240,6 +238,7 @@ def fundamental_target(fundamental_df, tickers, target_dates, relatives: Relativ
     constant = targets.replace(np.nan, 0).eq(last.replace(np.nan, 0)).all(axis=1)
     targets = targets.loc[~constant]
     targets = normalize_fundamentals(targets, relatives)
+    targets = targets.drop(columns=["date", "announce_date"])
 
     tickers = set(targets.index.unique()) & tickers
     return targets, tickers
@@ -254,7 +253,7 @@ def get_target(
     forecast_problem: str,
 ):
 
-    if forecast_problem == Problem.fundamentals:
+    if forecast_problem == Problem.fundamentals.name:
         return fundamental_target(fundamental_df, tickers, target_dates, relatives)
 
     return stock_target(stock_df, tickers, target_dates, relatives.last)
