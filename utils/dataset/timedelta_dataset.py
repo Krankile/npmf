@@ -7,6 +7,7 @@ import pandas as pd
 from sklearn.preprocessing import minmax_scale
 from torch.utils.data import Dataset
 
+from . import register_na_percentage
 from ..dtypes import fundamental_types
 
 
@@ -268,10 +269,6 @@ def get_target(
     targets_normalized = targets_normalized.astype(np.float32)
 
     return targets_normalized
-
-
-def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
 
 
 class TimeDeltaDataset(Dataset):

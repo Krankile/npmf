@@ -1,3 +1,4 @@
+from ctypes import Union
 from functools import partial
 import math
 from datetime import timedelta
@@ -7,6 +8,10 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import minmax_scale
 from torch.utils.data import Dataset
+
+from . import register_na_percentage, RelativeCols
+
+from ...utils import Problem
 
 from ..dtypes import fundamental_types
 
@@ -82,121 +87,37 @@ def get_global_local_column(
     relative_to_global_market_column: pd.Series = last_market_cap_col / apple_market_cap
     relative_to_current_market_column = _minmax_scale_series(last_market_cap_col)
 
-    return (
+    return RelativeCols(
         relative_to_global_market_column,
         relative_to_current_market_column,
         last_market_cap_col,
     )
 
 
-def create_fundamental_df(
-    fundamentals,
-    legal_fundamental_df,
-    n_reports,
-    relative_to_current_market_column,
-    relative_to_global_market_column,
-    last_market_cap_col,
+def normalize_fundamentals(
+    f: pd.DataFrame,
+    relatives: RelativeCols,
 ):
-    fund_columns = []
-    for i in range(n_reports):
-        fund_columns.extend(
-            legal_fundamental_df.loc[0, "revenue":]
-            .index.to_series()
-            .map(lambda title: f"{title}_q=-{n_reports-i}")
-        )
-    columns = ["global_relative"] + ["peers_relative"] + fund_columns
+    f = f.reindex(columns=(["global_relative", "peers_relative"] + f.columns.to_list()))
+    f = f.reset_index().set_index("ticker")
 
-    fundamental_df = pd.DataFrame(
-        index=legal_fundamental_df.ticker.unique(), columns=columns
+    f["global_relative"] = relatives.global_
+    f["peers_relative"] = relatives.current
+
+    f.loc[:, "revenue":"fcf"] = (f.loc[:, "revenue":"fcf"] / relatives.last).clip(
+        lower=-3, upper=3
     )
 
-    fundamental_df["peers_relative"] = relative_to_current_market_column.loc[
-        fundamental_df.index
-    ]
-    fundamental_df["global_relative"] = relative_to_global_market_column.loc[
-        fundamental_df.index
-    ]
+    total_assets = f.loc[:, "total_assets"]
+    f = f.drop(columns="total_assets")
 
-    fundamental_df.loc[:, f"revenue_q={-n_reports}":"fcf_p_revenue_q=-1"] = fundamentals
+    for col in f.loc[:, "total_current_assets":"total_current_liabilities"].columns:
+        f[col] /= total_assets
 
-    for q in range(n_reports, 0, -1):
-        fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"] = (
-            fundamental_df.loc[:, f"revenue_q={-q}":f"fcf_q={-q}"]
-            .div(last_market_cap_col, axis=0)
-            .clip(upper=3, lower=-3)
-        )
-        fundamental_df.loc[
-            :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
-        ] = fundamental_df.loc[
-            :, f"total_assets_q={-q}":f"total_current_liabilities_q={-q}"
-        ].div(
-            fundamental_df.loc[:, f"total_assets_q={-q}"], axis=0
-        )
-        fundamental_df.loc[
-            :, f"long_term_debt_p_assets_q={-q}":f"short_term_debt_p_assets_q={-q}"
-        ] = fundamental_df.loc[
-            :, f"long_term_debt_p_assets_q={-q}":f"short_term_debt_p_assets_q={-q}"
-        ].div(
-            100
-        )
-        fundamental_df = fundamental_df.drop(columns=f"total_assets_q={-q}")
-
-    fundamental_df = fundamental_df.replace(np.nan, 0)
-
-    return fundamental_df
-
-
-def get_last_q_fundamentals(fundamental_df, q):
-    fundamental_df = fundamental_df[~fundamental_df.date.isna()].astype(
-        fundamental_types
+    f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] = (
+        f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] / 100
     )
-    tickers = fundamental_df.ticker.unique()
-
-    fundamental_df["rank"] = (
-        fundamental_df.groupby("ticker")
-        .date.rank(method="first", ascending=False)
-        .astype(int)
-    )
-    fundamental_df = fundamental_df.set_index(["ticker", "rank"])
-    fundamental_df = fundamental_df[fundamental_df.index.get_level_values(1) <= q].loc[
-        :, "revenue":
-    ]
-
-    multidx = pd.MultiIndex.from_product(
-        [tickers, range(q, 0, -1)], names=["ticker", "rank"]
-    )
-    funds = pd.DataFrame(
-        data=0,
-        index=multidx,
-        columns=fundamental_df.loc[:, "revenue":].columns,
-        dtype=fundamental_df.dtypes.values,
-    )
-
-    result = funds.add(fundamental_df).sort_index(ascending=[True, False])
-    return result
-
-
-def get_fundamentals(fundamental_df, stock_tickers, current_time, n_reports):
-    # Only keep fundamentals for where we have stock data
-    legal_fundamental_df = fundamental_df[
-        (fundamental_df.announce_date < current_time)
-        & (fundamental_df.ticker.isin(stock_tickers))
-        & ~fundamental_df.date.isna()
-    ]
-
-    # Important dimensions
-    n_companies_with_fundamentals = len(legal_fundamental_df.ticker.unique())
-    m_fundamentals = legal_fundamental_df.loc[:, "revenue":].shape[1]
-
-    # Get last q fundamentals and return NA rows if they are still missing
-    fundamental_df_all_quarters = get_last_q_fundamentals(
-        legal_fundamental_df, n_reports
-    )
-    fundamentals = fundamental_df_all_quarters.to_numpy().reshape(
-        (n_companies_with_fundamentals, n_reports * m_fundamentals)
-    )
-
-    return fundamentals, legal_fundamental_df
+    return f
 
 
 def get_3d_fundamentals(
@@ -204,9 +125,7 @@ def get_3d_fundamentals(
     tickers,
     historic_dates,
     register_na,
-    relative_to_global_market_column,
-    relative_to_current_market_column,
-    last_market_cap_col,
+    relatives: RelativeCols,
 ):
     current_time = historic_dates.values[-1]
     f = fundamental_df[
@@ -228,23 +147,7 @@ def get_3d_fundamentals(
 
     register_na(pd.concat([f, missing], axis=0))
 
-    f = f.reindex(columns=(["global_relative", "peers_relative"] + f.columns.to_list()))
-    f = f.reset_index().set_index("ticker")
-    f["global_relative"] = relative_to_global_market_column
-    f["peers_relative"] = relative_to_current_market_column
-    f.loc[:, "revenue":"fcf"] = (f.loc[:, "revenue":"fcf"] / last_market_cap_col).clip(
-        lower=-3, upper=3
-    )
-
-    total_assets = f.loc[:, "total_assets"]
-    f = f.drop(columns="total_assets")
-
-    for col in f.loc[:, "total_current_assets":"total_current_liabilities"].columns:
-        f[col] /= total_assets
-
-    f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] = (
-        f.loc[:, "long_term_debt_p_assets":"short_term_debt_p_assets"] / 100
-    )
+    f = normalize_fundamentals(f, relatives)
 
     dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
     f = f.reset_index().set_index(["ticker", "announce_date"])
@@ -304,13 +207,7 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def get_target(
-    stock_df: pd.DataFrame,
-    tickers: set,
-    target_dates: pd.DatetimeIndex,
-    last_market_cap_col: pd.Series,
-):
-
+def stock_target(stock_df, tickers, target_dates, last_market_cap_col):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(
@@ -319,6 +216,7 @@ def get_target(
         scale=False,
         remove_na=False,
     )
+
     tickers = tickers & set(targets_unnormalized.index)
     targets_unnormalized = targets_unnormalized.loc[tickers, :]
 
@@ -331,8 +229,36 @@ def get_target(
     return targets_normalized, tickers
 
 
-def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
+def fundamental_target(fundamental_df, tickers, target_dates, relatives: RelativeCols):
+
+    targets: pd.DataFrame = (
+        fundamental_df[fundamental_df.date <= target_dates[-1]].groupby("ticker").last()
+    )
+    last: pd.DataFrame = (
+        fundamental_df[fundamental_df.date < target_dates[0]].groupby("ticker").last()
+    )
+
+    constant = targets.replace(np.nan, 0).eq(last.replace(np.nan, 0)).all(axis=1)
+    targets = targets.loc[~constant]
+    targets = normalize_fundamentals(targets, relatives)
+
+    tickers = set(targets.index.unique()) & tickers
+    return targets, tickers
+
+
+def get_target(
+    stock_df: pd.DataFrame,
+    fundamental_df: pd.DataFrame,
+    tickers: set,
+    target_dates: pd.DatetimeIndex,
+    relatives: RelativeCols,
+    forecast_problem: str,
+):
+
+    if forecast_problem == Problem.market_cap.name:
+        return fundamental_target(fundamental_df, tickers, target_dates, relatives)
+
+    return stock_target(stock_df, tickers, target_dates, relatives.last)
 
 
 class EraDataset(Dataset):
@@ -345,6 +271,7 @@ class EraDataset(Dataset):
         fundamental_df: pd.DataFrame,
         meta_df: pd.DataFrame,
         macro_df: pd.DataFrame,
+        forecast_problem: str,
         **_,
     ):
         # Get the relevant dates for training and targeting
@@ -355,7 +282,11 @@ class EraDataset(Dataset):
         self.na_percentage = dict()
 
         # Get stock df
-        legal_stock_df = stock_df.copy().loc[stock_df.date.isin(historic_dates), :]
+        legal_stock_df = (
+            stock_df.astype(fundamental_types)
+            .copy()
+            .loc[stock_df.date.isin(historic_dates), :]
+        )
         register_na_percentage(self.na_percentage, "stock", legal_stock_df)
 
         formatted_stocks = get_stocks_in_timeframe(
@@ -366,17 +297,18 @@ class EraDataset(Dataset):
         )
 
         # Get relative size information
-        (
-            relative_to_global_market_column,
-            relative_to_current_market_column,
-            last_market_cap_col,
-        ) = get_global_local_column(legal_stock_df)
+        relatives = get_global_local_column(legal_stock_df)
 
         tickers = set(legal_stock_df.ticker.unique())
 
         # Get targets
         self.target, tickers = get_target(
-            stock_df, tickers, target_dates, last_market_cap_col
+            stock_df,
+            fundamental_df,
+            tickers,
+            target_dates,
+            relatives,
+            forecast_problem,
         )
         register_na_percentage(self.na_percentage, "target", self.target)
 
@@ -388,9 +320,7 @@ class EraDataset(Dataset):
             tickers,
             historic_dates,
             partial(register_na_percentage, self.na_percentage, "fundamental"),
-            relative_to_global_market_column,
-            relative_to_current_market_column,
-            last_market_cap_col,
+            relatives,
         )
 
         # TODO: Review the strategy for dealing with nan values
