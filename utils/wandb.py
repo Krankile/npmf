@@ -1,11 +1,10 @@
-from operator import itemgetter
+from pathlib import Path
 import pickle
 from typing import Iterable, Tuple
 
 import pandas as pd
 import torch
 from torch import nn
-from torch.nn.utils import weight_norm
 
 import wandb as wb
 
@@ -139,3 +138,23 @@ def put_nn_model(model: nn.Module, run) -> None:
     art.add_file(filename)
 
     run.log_artifact(art)
+
+
+data_artifacts = {
+    20: "era-datasets:v3",
+    240: "era-datasets:v4",
+}
+
+
+def get_processed_data(run, kind):
+    artifact = data_artifacts[kind]
+    path = Path("./artifacts") / artifact
+
+    art = run.use_artifact(artifact)
+
+    if path.exists():
+        return path
+
+    art.download()
+
+    return path

@@ -198,12 +198,29 @@ def std_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     denom = mask.sum(dim=1, keepdim=True)
     denom2 = mask2.sum(dim=0).item()
 
-    l=((torch.nan_to_num((torch.sum(
-        ((target_ - torch.sum(target_, dim=1, keepdim=True) / denom)*mask) ** 2,
-        dim=1,
-        keepdim=True,
-    )/denom)**(1/2)-y_pred)*mask2)**2).sum()/denom2
-    
+    l = (
+        (
+            torch.nan_to_num(
+                (
+                    torch.sum(
+                        (
+                            (target_ - torch.sum(target_, dim=1, keepdim=True) / denom)
+                            * mask
+                        )
+                        ** 2,
+                        dim=1,
+                        keepdim=True,
+                    )
+                    / denom
+                )
+                ** (1 / 2)
+                - y_pred
+            )
+            * mask2
+        )
+        ** 2
+    ).sum() / denom2
+
     return l
 
 
@@ -219,12 +236,28 @@ def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     denom = mask.sum(dim=1, keepdim=True)
     denom2 = mask2.sum(dim=0).item()
 
-    l=((torch.nan_to_num((torch.sum(
-        ((target_ - torch.sum(target_, dim=1, keepdim=True) / denom)*mask) ** 2,
-        dim=1,
-        keepdim=True,
-    )/denom)**(1/2)-y_pred)*mask2).abs()).sum()/denom2
-    
+    l = (
+        (
+            torch.nan_to_num(
+                (
+                    torch.sum(
+                        (
+                            (target_ - torch.sum(target_, dim=1, keepdim=True) / denom)
+                            * mask
+                        )
+                        ** 2,
+                        dim=1,
+                        keepdim=True,
+                    )
+                    / denom
+                )
+                ** (1 / 2)
+                - y_pred
+            )
+            * mask2
+        ).abs()
+    ).sum() / denom2
+
     return l
 
 
