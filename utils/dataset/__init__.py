@@ -18,4 +18,6 @@ __all__ = [
     EraDataset,
     TimeDeltaDataset,
     EraController,
+    register_na_percentage,
+    RelativeCols,
 ]
