@@ -17,7 +17,7 @@ def get_stocks_in_timeframe(
     stock_df, stock_dates, scale=True, remove_na=True
 ) -> pd.DataFrame:
     out = pd.DataFrame(
-        data=0, columns=stock_dates, index=stock_df.ticker.unique(), dtype=np.float64
+        data=0, columns=stock_dates, index=stock_df.ticker.unique(), dtype=np.float32
     )
     stock_df = stock_df.pivot(index="ticker", columns="date", values="market_cap")
     out = out.add(stock_df)
@@ -304,7 +304,7 @@ class EraDataset(Dataset):
         # Get relative size information
         relatives = get_global_local_column(legal_stock_df)
 
-        tickers = set(legal_stock_df.ticker.unique())
+        tickers = set(formatted_stocks.ticker.unique())
 
         # Get targets
         self.target, tickers = get_target(
