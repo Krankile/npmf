@@ -6,7 +6,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from utils import Problem
+from ..utils import Problem
 
 
 class TqdmPostFix(tqdm):
