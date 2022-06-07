@@ -200,7 +200,7 @@ def get_naive_pred(data, target, device, conf):
     if conf.forecast_problem == Problem.volatility.name:
         return data[:, 0, :-20].std(dim=1, keepdim=True)
 
-    if conf.forecast_problem == Problem.forecasting.name:
+    if conf.forecast_problem == Problem.fundamentals.name:
         return data[:, :, -1]
 
     raise ValueError("Invalid problem passed")
