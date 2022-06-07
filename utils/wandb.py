@@ -150,7 +150,7 @@ def get_processed_data(run, kind):
     artifact = data_artifacts[kind]
     path = Path("./artifacts") / artifact
 
-    art = run.use_artifact(artifact)
+    art = run.use_artifact(f"krankile/master/{artifact}")
 
     if path.exists():
         return path
