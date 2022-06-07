@@ -197,7 +197,7 @@ def get_naive_pred(data, target, device, conf):
     if conf.forecast_problem == Problem.market_cap.name:
         return torch.ones(target.shape, device=device)
 
-    if conf.forecast_problem == Problem.volatity.name:
+    if conf.forecast_problem == Problem.volatility.name:
         return data[:, 0, :-20].std(dim=1, keepdim=True)
 
     raise ValueError("Invalid problem passed")
