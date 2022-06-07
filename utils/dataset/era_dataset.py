@@ -304,7 +304,7 @@ class EraDataset(Dataset):
         # Get relative size information
         relatives = get_global_local_column(legal_stock_df)
 
-        tickers = set(formatted_stocks.ticker.unique())
+        tickers = set(formatted_stocks.index.unique())
 
         # Get targets
         self.target, tickers = get_target(
