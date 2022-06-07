@@ -70,6 +70,7 @@ class EraController:
                 self.fundamental_df,
                 self.meta_df,
                 self.macro_df,
+                self.conf.forecast_problem,
             )
 
         if self.conf.get("clamp") is not None:
