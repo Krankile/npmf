@@ -338,6 +338,10 @@ class EraDataset(Dataset):
             + macro_df.columns.to_list()
         )
 
+        self.target_fields = self.target.columns.to_list()
+
+        self.target = self.target.to_numpy().astype(np.float32)
+
         self.tickers = formatted_stocks.index.to_list()
 
         formatted_stocks = formatted_stocks.to_numpy().reshape((-1, training_window, 1))
@@ -370,5 +374,5 @@ class EraDataset(Dataset):
             self.data[idx, :, :],
             self.meta_cont.iloc[idx, :].to_numpy(),
             self.meta_cat.iloc[idx, :].to_numpy(),
-            self.target.iloc[idx, :].to_numpy(),
+            self.target.iloc[idx, :],
         )
