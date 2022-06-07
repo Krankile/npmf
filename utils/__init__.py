@@ -28,5 +28,5 @@ class Fundamentals:
 
 class Problem:
     market_cap = MarketCap
-    volatity = Volatility
+    volatility = Volatility
     fundamentals = Fundamentals
