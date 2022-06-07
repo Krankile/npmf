@@ -66,7 +66,6 @@ class EraController:
                 date,
                 self.conf.training_w,
                 self.conf.forecast_w,
-                self.conf.n_reports,
                 self.stock_df,
                 self.fundamental_df,
                 self.meta_df,
