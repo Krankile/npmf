@@ -6,6 +6,8 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
+from utils import Problem
+
 
 class TqdmPostFix(tqdm):
     def __init__(self, *args, **kwargs):
@@ -189,3 +191,13 @@ activations = dict(
 )
 
 n_layers = lambda l, k, b: math.ceil(math.log((l - 1) * (b - 1) / ((k - 1) * 2) + 1, b))
+
+
+def get_naive_pred(data, target, device, conf):
+    if conf.forecast_problem == Problem.market_cap.name:
+        return torch.ones(target.shape, device=device)
+
+    if conf.forecast_problem == Problem.volatity.name:
+        return data[:, 0, :-20].std(dim=1, keepdim=True)
+
+    raise ValueError("Invalid problem passed")
