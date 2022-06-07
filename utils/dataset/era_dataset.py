@@ -380,5 +380,5 @@ class EraDataset(Dataset):
             self.data[idx, :, :],
             self.meta_cont.iloc[idx, :].to_numpy(),
             self.meta_cat.iloc[idx, :].to_numpy(),
-            self.target.iloc[idx, :],
+            self.target[idx, :],
         )
