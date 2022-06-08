@@ -25,10 +25,16 @@ class VolForecastW:
     h20 = 20
 
 
+class MCNormalize:
+    mcap = "mcap"
+    minmax = "minmax"
+
+
 class MarketCap:
     name = "market_cap"
     loss = MCLoss
     forecast_w = MCForecastW
+    normalize = MCNormalize
 
 
 class Volatility:

@@ -5,7 +5,7 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import minmax_scale
+from sklearn.preprocessing import MinMaxScaler, minmax_scale
 from torch.utils.data import Dataset
 
 from ...utils import Problem
@@ -30,11 +30,14 @@ def get_stocks_in_timeframe(
 
     # Perform MinMaxScaling on the full dataset
     if scale:
+        scaler = MinMaxScaler()
         out = pd.DataFrame(
-            data=minmax_scale(out.values, axis=1),
+            data=scaler.fit_transform(out.values, axis=1),
             index=out.index,
             columns=out.columns,
         )
+        return out, scaler
+
     return out
 
 
@@ -278,6 +281,7 @@ class EraDataset(Dataset):
         meta_df: pd.DataFrame,
         macro_df: pd.DataFrame,
         forecast_problem: str,
+        normalize_targets: str,
         **_,
     ):
         # Get the relevant dates for training and targeting

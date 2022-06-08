@@ -146,6 +146,7 @@ data_artifacts = {
     (Problem.market_cap.name, 20): "era-datasets:20",
     (Problem.market_cap.name, 240): "era-datasets:240",
     (Problem.fundamentals.name, 60): "fund-era-datasets:60",
+    (Problem.volatility.name, 20): "era-datasets:20",
 }
 
 
