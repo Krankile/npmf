@@ -280,6 +280,7 @@ def get_target(
 class EraDataset(Dataset):
     def __init__(
         self,
+        *,
         current_time: pd.Timestamp,
         training_window: int,
         target_window: int,
