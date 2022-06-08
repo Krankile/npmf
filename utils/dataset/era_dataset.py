@@ -339,7 +339,7 @@ class EraDataset(Dataset):
             target_dates,
             forecast_problem,
         )
-        register_na_percentage(self.na_percentage, "target", self.target)
+        register_na_percentage(self.na_percentage, "target", target)
 
         # Make sure that only tickers with data both in training and forecasting is included
         formatted_stocks = formatted_stocks.loc[tickers, :]
@@ -378,10 +378,8 @@ class EraDataset(Dataset):
             + macro_df.columns.to_list()
         )
 
-        self.target = target
+        self.target = target.to_numpy().astype(np.float32)
         self.target_fields = target.columns.to_list()
-
-        self.target = self.target.to_numpy().astype(np.float32)
 
         self.tickers = formatted_stocks.index.to_list()
 
