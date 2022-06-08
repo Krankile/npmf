@@ -8,6 +8,8 @@ from torch import nn
 
 import wandb as wb
 
+from ..utils import Problem
+
 from .models import models
 
 
@@ -141,8 +143,9 @@ def put_nn_model(model: nn.Module, run) -> None:
 
 
 data_artifacts = {
-    20: "era-datasets:v3",
-    240: "era-datasets:v4",
+    (Problem.market_cap.name, 20): "era-datasets:v3",
+    (Problem.market_cap.name, 240): "era-datasets:v4",
+    (Problem.fundamentals.name, 60): "fund-era-datasets:v1",
 }
 
 

@@ -6,8 +6,10 @@ from ...utils import Problem
 
 
 def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame):
-    dictionary[df_nick_name] = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
-
+    try:
+        dictionary[df_nick_name] = df.isnull().sum().sum() / (df.shape[0] * df.shape[1])
+    except FloatingPointError:
+        pass
 
 RelativeCols = namedtuple("RelativeCols", field_names="global_ current last")
 
@@ -27,7 +29,5 @@ def clamp_and_slice(dataset, *, conf):
         dataset.target = dataset.target[:, conf.fundamental_targets]
 
         # TODO: Drop targets where the subset of columns does not change
-
-
 
     return dataset
