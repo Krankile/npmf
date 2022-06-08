@@ -32,7 +32,7 @@ def get_stocks_in_timeframe(
     if scale:
         scaler = MinMaxScaler()
         out = pd.DataFrame(
-            data=scaler.fit_transform(out.values, axis=1),
+            data=scaler.fit_transform(out.values.T).T,
             index=out.index,
             columns=out.columns,
         )
@@ -225,7 +225,7 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=No
         )
     else:
         targets = pd.DataFrame(
-            data=scaler.transform(targets_unnormalized.values, axis=1),
+            data=scaler.transform(targets_unnormalized.values.T).T,
             index=targets_unnormalized.index,
             columns=targets_unnormalized.columns,
         )
