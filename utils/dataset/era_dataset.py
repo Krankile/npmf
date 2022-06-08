@@ -218,6 +218,7 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=No
     )
 
     tickers = tickers & set(targets_unnormalized.index)
+    targets = targets.loc[tickers, :].astype(np.float32)
 
     if scaler is None:
         targets = targets_unnormalized.div(
@@ -230,7 +231,6 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=No
             columns=targets_unnormalized.columns,
         )
 
-    targets = targets.loc[tickers, :].astype(np.float32)
 
     return targets, tickers
 
