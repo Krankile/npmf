@@ -11,6 +11,7 @@ def register_na_percentage(dictionary: dict, df_nick_name: str, df: pd.DataFrame
     except FloatingPointError:
         pass
 
+
 RelativeCols = namedtuple("RelativeCols", field_names="global_ current last")
 
 

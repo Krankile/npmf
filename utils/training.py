@@ -82,18 +82,34 @@ def mape_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
 
 
 def mape_loss_2(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-    mask = (~target.isnan()) & (target.abs() >= 1e-2)
+    mask = (~target.isnan()) & target.isfinite()
     denom = mask.sum(dim=1)
     target[target != target] = 0
     l = (
-        (((y_pred - target).abs() / (target.abs() + 1e-8) * mask)).sum(dim=1) / denom
+        (((y_pred - target).abs() / (target.abs() + 1e-6) * mask)).sum(dim=1) / denom
+    ).mean()
+    return l.clamp(min=0, max=10_000)
+
+
+def smape_loss(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    mask = (~target.isnan()) & target.isfinite()
+    denom = mask.sum(dim=1)
+    target[target != target] = 0
+    l = (
+        2
+        * (((y_pred - target).abs() / (target.abs() + y_pred.abs() + 1e-6) * mask)).sum(
+            dim=1
+        )
+        / denom
     ).mean()
     return l
 
 
 def mse_loss_2(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-    mask = (~target.isnan()) & (target.abs() >= 1e-2)
+
+    mask = ~target.isnan() & target.isfinite()
     denom = mask.sum(dim=1)
+
     target[target != target] = 0
     l = ((((y_pred - target) ** 2 * mask)).sum(dim=1) / denom).mean()
     return l
@@ -178,10 +194,10 @@ loss_fns = dict(
     mape=mape_loss,
     mape_2=mape_loss_2,
     mse_2=mse_loss_2,
+    smape=smape_loss,
     std_diff=std_loss_diff_abs,
     std_diff_mse=std_loss_diff_mse,
 )
-
 
 activations = dict(
     relu=nn.ReLU,
@@ -198,7 +214,7 @@ def get_naive_pred(data, target, device, conf):
         return torch.ones(target.shape, device=device)
 
     if conf.forecast_problem == Problem.volatility.name:
-        return data[:, 0, -conf.forecast_w:].std(dim=1, keepdim=True)
+        return data[:, 0, -conf.forecast_w :].std(dim=1, keepdim=True)
 
     if conf.forecast_problem == Problem.fundamentals.name:
         subset = conf.get("fundamental_targets") or slice(1, 18 + 1)
