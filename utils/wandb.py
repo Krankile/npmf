@@ -149,8 +149,8 @@ data_artifacts = {
 }
 
 
-def get_processed_data(run, kind):
-    artifact = data_artifacts[kind]
+def get_processed_data(run, conf: wb.Config):
+    artifact = data_artifacts[(conf.forecast_problem, conf.forecast_w)]
     path = Path("./artifacts") / artifact
 
     art = run.use_artifact(f"krankile/master/{artifact}")
