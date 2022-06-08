@@ -211,7 +211,7 @@ n_layers = lambda l, k, b: math.ceil(math.log((l - 1) * (b - 1) / ((k - 1) * 2) 
 
 def get_naive_pred(data, target, device, conf):
     if conf.forecast_problem == Problem.market_cap.name:
-        if conf.get("normalize_targets") == Problem.normalize.minmax:
+        if conf.get("normalize_targets") == Problem.market_cap.normalize.minmax:
             return data[:, 0, -1:]
 
         if (
