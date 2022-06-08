@@ -207,7 +207,7 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def stock_target(stock_df, tickers, target_dates, last_market_cap_col):
+def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=None):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(
@@ -218,15 +218,21 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col):
     )
 
     tickers = tickers & set(targets_unnormalized.index)
-    targets_unnormalized = targets_unnormalized.loc[tickers, :]
 
-    targets_normalized = targets_unnormalized.div(
-        last_market_cap_col.loc[tickers], axis=0
-    )
+    if scaler is None:
+        targets = targets_unnormalized.div(
+            last_market_cap_col.loc[tickers], axis=0
+        )
+    else:
+        targets = pd.DataFrame(
+            data=scaler.transform(targets_unnormalized.values, axis=1),
+            index=targets_unnormalized.index,
+            columns=targets_unnormalized.columns,
+        )
 
-    targets_normalized = targets_normalized.astype(np.float32)
+    targets = targets.loc[tickers, :].astype(np.float32)
 
-    return targets_normalized, tickers
+    return targets, tickers
 
 
 def fundamental_target(fundamental_df, tickers, target_dates, relatives: RelativeCols):
@@ -262,12 +268,13 @@ def get_target(
     target_dates: pd.DatetimeIndex,
     relatives: RelativeCols,
     forecast_problem: str,
+    scaler=None,
 ):
 
     if forecast_problem == Problem.fundamentals.name:
         return fundamental_target(fundamental_df, tickers, target_dates, relatives)
 
-    return stock_target(stock_df, tickers, target_dates, relatives.last)
+    return stock_target(stock_df, tickers, target_dates, relatives.last, scaler=scaler)
 
 
 class EraDataset(Dataset):
@@ -305,7 +312,7 @@ class EraDataset(Dataset):
         )
         register_na_percentage(self.na_percentage, "stock", legal_stock_df)
 
-        formatted_stocks = get_stocks_in_timeframe(
+        formatted_stocks, scaler = get_stocks_in_timeframe(
             legal_stock_df,
             historic_dates,
             scale=True,
@@ -318,6 +325,8 @@ class EraDataset(Dataset):
         tickers = set(formatted_stocks.index.unique())
 
         # Get targets
+        print("scaler", scaler if normalize_targets == Problem.market_cap.normalize.minmax else None)
+
         self.target, tickers = get_target(
             stock_df,
             fundamental_df,
@@ -325,6 +334,7 @@ class EraDataset(Dataset):
             target_dates,
             relatives,
             forecast_problem,
+            scaler=scaler if normalize_targets == Problem.market_cap.normalize.minmax else None,
         )
         register_na_percentage(self.na_percentage, "target", self.target)
 

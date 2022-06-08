@@ -116,14 +116,12 @@ class EraController:
                 dataset: EraDataset = pickle.load(f)
         else:
             dataset = EraDataset(
-                date,
-                self.conf.training_w,
-                self.conf.forecast_w,
-                self.stock_df,
-                self.fundamental_df,
-                self.meta_df,
-                self.macro_df,
-                self.conf.forecast_problem,
+                current_time=date,
+                stock_df=self.stock_df,
+                fundamental_df=self.fundamental_df,
+                meta_df=self.meta_df,
+                macro_df=self.macro_df,
+                **self.conf,
             )
 
         dataset = clamp_and_slice(dataset, conf=self.conf)
