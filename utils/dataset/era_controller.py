@@ -2,33 +2,35 @@ import pickle
 import random
 from glob import glob
 
+import numpy as np
 import pandas as pd
 from torch.utils.data import ConcatDataset, DataLoader
 
-from ...utils import Problem
 from .era_dataset import EraDataset
 from .utils import clamp_and_slice
 
 
 class EraController:
+    class Mode:
+        sequential = "sequential"
+        random = "random"
+
     def __init__(
         self,
+        era_controller,
         start_date,
-        end_metric_start_date,
-        queue_length,
+        end_date,
         stock_df,
         fundamental_df,
         meta_df,
         macro_df,
         conf,
+        **_,
     ):
+
+        self.mode = era_controller["mode"]
+        self.params = era_controller
         self.conf = conf
-        self.stock_df, self.fundamental_df, self.meta_df, self.macro_df = (
-            stock_df,
-            fundamental_df,
-            meta_df,
-            macro_df,
-        )
 
         self.path_dict = None
         if "pre_proc_data_dir" in self.conf and self.conf.pre_proc_data_dir is not None:
@@ -36,28 +38,79 @@ class EraController:
                 path.split("/")[-1]: path
                 for path in sorted(glob(self.conf.pre_proc_data_dir + "/*"))
             }
+        else:
+            self.stock_df, self.fundamental_df, self.meta_df, self.macro_df = (
+                stock_df,
+                fundamental_df,
+                meta_df,
+                macro_df,
+            )
 
-        self.dates_have_overlapped = False
         self.loader_to_na_dict = {}
+        self.n_iters = 0
 
-        self.infront_dates = pd.date_range(
-            start=start_date, periods=queue_length, freq="M"
-        )
-        self.end_dates = pd.date_range(
-            start=end_metric_start_date, periods=queue_length, freq="M"
-        )
+        if self.mode == self.Mode.sequential:
+            queue_length = era_controller["queue_length"]
+            self.infront_dates = pd.date_range(
+                start=start_date, periods=queue_length, freq="M"
+            )
+            self.date = self.infront_dates[0]
+            self.end_dates = pd.date_range(
+                start=end_date, periods=queue_length, freq="M"
+            )
 
-        self.infront_loaders = self.dates_to_loader(self.infront_dates)
-        self.end_loaders = self.dates_to_loader(self.end_dates)
+            self.infront_loaders = self.dates_to_loader(self.infront_dates)
+            self.end_loaders = self.dates_to_loader(self.end_dates)
 
-        self.total = len(
-            pd.date_range(start=self.infront_dates[0], end=self.end_dates[0], freq="M")
-        )
+            self.dates_have_overlapped = False
+            self.total = len(
+                pd.date_range(
+                    start=self.infront_dates[0], end=self.end_dates[0], freq="M"
+                )
+            )
+            self.past_dates = []
+            self._next = self.sequential_next
 
-        self.date = self.infront_dates[0]
-        self.past_dates = []
+        elif self.mode == self.Mode.random:
+            self.max_samplings = era_controller["max_samplings"]
+            self.sample_size = era_controller["sample_size"]
+
+            metric_dates = pd.date_range(start=end_date, end="2018-12-31", freq="M")
+
+            self.infront_dates = metric_dates[: len(metric_dates) // 2]
+            self.end_dates = metric_dates[len(metric_dates) // 2 :]
+
+            self.past_dates = list(
+                pd.date_range(start=start_date, end=end_date, freq="M")
+            )
+            self.date = self.past_dates[-1]
+
+            self.infront_loaders = self.dates_to_loader(self.infront_dates)
+            self.end_loaders = self.dates_to_loader(self.end_dates)
+
+            self.total = era_controller["max_samplings"]
+            self._next = self.random_next
+
+        else:
+            raise ValueError("Invalid EraController mode specified")
+
+    def register_pbar(self, pbar):
+        self.pbar = pbar
+        self.update_pbar_desc()
+
+    def update_pbar_desc(self):
+        if self.mode == self.Mode.sequential:
+            self.pbar.set_description(
+                f"Era {self.date} [{self.n_iters+1}/{self.total}]"
+            )
+
+        elif self.mode == self.Mode.random:
+            self.pbar.set_description(
+                f"Sampling before {self.date} [{self.n_iters+1}/{self.total}]"
+            )
 
     def get_dataset(self, date):
+
         if self.path_dict is not None:
             with open(self.path_dict[str(date)], "rb") as f:
                 dataset: EraDataset = pickle.load(f)
@@ -74,7 +127,6 @@ class EraController:
             )
 
         dataset = clamp_and_slice(dataset, conf=self.conf)
-
         return dataset
 
     def date_to_loader(self, date) -> DataLoader:
@@ -87,7 +139,7 @@ class EraController:
             num_workers=self.conf.cpus,
         )
 
-        self.loader_to_na_dict[date] = dataset_infront.na_percentage
+        # self.loader_to_na_dict[date] = dataset_infront.na_percentage
         return loader
 
     def combine_data(self, loader, date):
@@ -111,10 +163,20 @@ class EraController:
     def validation_loaders(self):
         return self.infront_loaders, self.end_loaders
 
+    def get_random_loader(self):
+        random_dates = np.random.choice(
+            self.past_dates, size=self.sample_size, replace=True
+        )
+        return DataLoader(
+            ConcatDataset([self.get_dataset(date) for date in random_dates]),
+            batch_size=self.conf.batch_size,
+            shuffle=True,
+        )
+
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def sequential_next(self):
         if self.infront_dates[-1] == self.end_dates[-1]:
             raise StopIteration
 
@@ -157,4 +219,21 @@ class EraController:
             )
             self.infront_loaders.append(self.date_to_loader(next_date))
 
+        self.n_iters += 1
+        self.update_pbar_desc()
+
         return dataloader_train, dataloader_val
+
+    def random_next(self):
+
+        if self.n_iters == self.max_samplings:
+            raise StopIteration
+
+        dataloader_train = self.get_random_loader()
+        self.n_iters += 1
+
+        self.update_pbar_desc()
+        return dataloader_train, self.infront_loaders[0]
+
+    def __next__(self):
+        return self._next()
