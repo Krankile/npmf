@@ -194,14 +194,13 @@ def get_macro_df(
 
 
 def stock_target(
-    stock_df: pd.DataFrame, tickers: pd.Index, target_dates, last_market_cap_col
+    stock_df: pd.DataFrame, tickers: pd.Index, target_dates
 ):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(
         targets,
         target_dates,
-        scale=False,
         remove_na=False,
     )
 
@@ -215,7 +214,6 @@ def fundamental_target(
     fundamental_df: pd.DataFrame,
     tickers: pd.Index,
     target_dates,
-    relatives: RelativeCols,
 ):
 
     targets: pd.DataFrame = (
@@ -277,14 +275,13 @@ def get_target(
     fundamental_df: pd.DataFrame,
     tickers: pd.Index,
     target_dates: pd.DatetimeIndex,
-    relatives: RelativeCols,
     forecast_problem: str,
 ):
 
     if forecast_problem == Problem.fundamentals.name:
-        return fundamental_target(fundamental_df, tickers, target_dates, relatives)
+        return fundamental_target(fundamental_df, tickers, target_dates)
 
-    return stock_target(stock_df, tickers, target_dates, relatives.last)
+    return stock_target(stock_df, tickers, target_dates)
 
 
 class EraDataset(Dataset):
@@ -340,7 +337,6 @@ class EraDataset(Dataset):
             fundamental_df,
             tickers,
             target_dates,
-            relatives,
             forecast_problem,
         )
         register_na_percentage(self.na_percentage, "target", self.target)
