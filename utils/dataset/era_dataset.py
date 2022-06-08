@@ -13,9 +13,7 @@ from ...utils.dataset.utils import RelativeCols, register_na_percentage
 from ..dtypes import fundamental_types
 
 
-def get_stocks_in_timeframe(
-    stock_df, stock_dates, scale=True, remove_na=True
-) -> pd.DataFrame:
+def get_stocks_in_timeframe(stock_df, stock_dates, remove_na=True) -> pd.DataFrame:
     out = pd.DataFrame(
         data=0, columns=stock_dates, index=stock_df.ticker.unique(), dtype=np.float32
     )
@@ -28,16 +26,6 @@ def get_stocks_in_timeframe(
     if remove_na:
         out: pd.DataFrame = out.ffill(axis=1).replace(np.nan, 0)
 
-    # Perform MinMaxScaling on the full dataset
-    if scale:
-        scaler = MinMaxScaler()
-        out = pd.DataFrame(
-            data=scaler.fit_transform(out.values.T).T,
-            index=out.index,
-            columns=out.columns,
-        )
-        return out, scaler
-
     return out
 
 
@@ -49,9 +37,7 @@ def get_historic_dates(current_time, trading_days):
     )[-trading_days:]
 
 
-def get_target_dates(
-    current_time: np.datetime64, forecast_w: int
-) -> pd.DatetimeIndex:
+def get_target_dates(current_time: np.datetime64, forecast_w: int) -> pd.DatetimeIndex:
     forward_in_time_buffer = timedelta(forecast_w + forecast_w * 5)
     return pd.date_range(
         start=current_time + timedelta(1),
@@ -207,7 +193,9 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def stock_target(stock_df: pd.DataFrame, tickers: pd.Index, target_dates, last_market_cap_col, scaler=None):
+def stock_target(
+    stock_df: pd.DataFrame, tickers: pd.Index, target_dates, last_market_cap_col
+):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(
@@ -220,21 +208,15 @@ def stock_target(stock_df: pd.DataFrame, tickers: pd.Index, target_dates, last_m
     tickers = tickers.intersection(targets_unnormalized.index.unique()).sort_values()
     targets_unnormalized = targets_unnormalized.loc[tickers, :].astype(np.float32)
 
-    if scaler is None:
-        targets = targets_unnormalized.div(
-            last_market_cap_col.loc[tickers], axis=0
-        )
-    else:
-        targets = pd.DataFrame(
-            data=scaler.transform(targets_unnormalized.values.T).T,
-            index=targets_unnormalized.index,
-            columns=targets_unnormalized.columns,
-        )
-
-    return targets, tickers
+    return targets_unnormalized, tickers
 
 
-def fundamental_target(fundamental_df: pd.DataFrame, tickers: pd.Index, target_dates, relatives: RelativeCols):
+def fundamental_target(
+    fundamental_df: pd.DataFrame,
+    tickers: pd.Index,
+    target_dates,
+    relatives: RelativeCols,
+):
 
     targets: pd.DataFrame = (
         fundamental_df[fundamental_df.date <= target_dates[-1]]
@@ -252,12 +234,42 @@ def fundamental_target(fundamental_df: pd.DataFrame, tickers: pd.Index, target_d
     constant = targets.replace(np.nan, 0).eq(last.replace(np.nan, 0)).all(axis=1)
 
     targets = targets.loc[~constant]
-    targets = normalize_fundamentals(targets, relatives)
 
     tickers = tickers.intersection(targets.index.unique()).sort_values()
     targets = targets.drop(columns=["date", "announce_date"]).loc[tickers, :]
 
     return targets, tickers
+
+
+def normalize_stock_target(
+    target, tickers, scaler, last_market_cap_col, normalize_targets
+):
+    if normalize_targets == Problem.market_cap.normalize.mcap:
+        return target.div(last_market_cap_col.loc[tickers], axis=0)
+    elif normalize_targets == Problem.market_cap.normalize.minmax:
+        return pd.DataFrame(
+            data=scaler.transform(target.values.T).T,
+            index=target.index,
+            columns=target.columns,
+        )
+
+    raise ValueError
+
+
+def normalize_target(
+    target,
+    forecast_problem,
+    tickers,
+    relatives,
+    scaler=None,
+    normalize_targets=None,
+):
+    if forecast_problem == Problem.fundamentals.name:
+        return normalize_fundamentals(target, relatives)
+
+    return normalize_stock_target(
+        target, tickers, scaler, relatives.last, normalize_targets
+    )
 
 
 def get_target(
@@ -267,13 +279,12 @@ def get_target(
     target_dates: pd.DatetimeIndex,
     relatives: RelativeCols,
     forecast_problem: str,
-    scaler=None,
 ):
 
     if forecast_problem == Problem.fundamentals.name:
         return fundamental_target(fundamental_df, tickers, target_dates, relatives)
 
-    return stock_target(stock_df, tickers, target_dates, relatives.last, scaler=scaler)
+    return stock_target(stock_df, tickers, target_dates, relatives.last)
 
 
 class EraDataset(Dataset):
@@ -312,10 +323,9 @@ class EraDataset(Dataset):
         )
         register_na_percentage(self.na_percentage, "stock", legal_stock_df)
 
-        formatted_stocks, scaler = get_stocks_in_timeframe(
+        formatted_stocks = get_stocks_in_timeframe(
             legal_stock_df,
             historic_dates,
-            scale=True,
             remove_na=True,
         )
 
@@ -325,19 +335,29 @@ class EraDataset(Dataset):
         tickers: pd.Index = formatted_stocks.index.unique()
 
         # Get targets
-        self.target, tickers = get_target(
+        target, tickers = get_target(
             stock_df,
             fundamental_df,
             tickers,
             target_dates,
             relatives,
             forecast_problem,
-            scaler=scaler if normalize_targets == Problem.market_cap.normalize.minmax else None,
         )
         register_na_percentage(self.na_percentage, "target", self.target)
 
         # Make sure that only tickers with data both in training and forecasting is included
-        formatted_stocks = formatted_stocks.loc[self.target.index, :]
+        formatted_stocks = formatted_stocks.loc[tickers, :]
+
+        scaler = MinMaxScaler()
+        formatted_stocks = pd.DataFrame(
+            data=scaler.fit_transform(formatted_stocks.values.T).T,
+            index=formatted_stocks.index,
+            columns=formatted_stocks.columns,
+        )
+
+        target = normalize_target(
+            target, forecast_problem, tickers, relatives, scaler, normalize_targets
+        )
 
         legal_fundamentals = get_3d_fundamentals(
             fundamental_df,
@@ -362,16 +382,15 @@ class EraDataset(Dataset):
             + macro_df.columns.to_list()
         )
 
-        self.target_fields = self.target.columns.to_list()
+        self.target = target
+        self.target_fields = target.columns.to_list()
 
         self.target = self.target.to_numpy().astype(np.float32)
 
         self.tickers = formatted_stocks.index.to_list()
 
         formatted_stocks = formatted_stocks.to_numpy().reshape((-1, training_w, 1))
-        legal_fundamentals = legal_fundamentals.to_numpy().reshape(
-            (-1, training_w, 18)
-        )
+        legal_fundamentals = legal_fundamentals.to_numpy().reshape((-1, training_w, 18))
 
         macro_df = (
             macro_df.to_numpy()
