@@ -193,9 +193,7 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def stock_target(
-    stock_df: pd.DataFrame, tickers: pd.Index, target_dates
-):
+def stock_target(stock_df: pd.DataFrame, tickers: pd.Index, target_dates):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(

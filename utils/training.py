@@ -211,7 +211,14 @@ n_layers = lambda l, k, b: math.ceil(math.log((l - 1) * (b - 1) / ((k - 1) * 2) 
 
 def get_naive_pred(data, target, device, conf):
     if conf.forecast_problem == Problem.market_cap.name:
-        return torch.ones(target.shape, device=device)
+        if conf.get("normalize_targets") == Problem.normalize.minmax:
+            return data[:, 0, -1:]
+
+        if (
+            conf.get("normalize_targets") is None
+            or conf.get("normalize_targets") == Problem.normalize.mc
+        ):
+            return torch.ones(target.shape, device=device)
 
     if conf.forecast_problem == Problem.volatility.name:
         return data[:, 0, -conf.forecast_w :].std(dim=1, keepdim=True)
