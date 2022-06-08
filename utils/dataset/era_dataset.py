@@ -50,14 +50,14 @@ def get_historic_dates(current_time, trading_days):
 
 
 def get_target_dates(
-    current_time: np.datetime64, target_window: int
+    current_time: np.datetime64, forecast_w: int
 ) -> pd.DatetimeIndex:
-    forward_in_time_buffer = timedelta(target_window + target_window * 5)
+    forward_in_time_buffer = timedelta(forecast_w + forecast_w * 5)
     return pd.date_range(
         start=current_time + timedelta(1),
         end=current_time + forward_in_time_buffer,
         freq="B",
-    )[:target_window]
+    )[:forecast_w]
 
 
 def _get_last_market_cap(stock_df: pd.DataFrame) -> pd.Series:
@@ -282,8 +282,8 @@ class EraDataset(Dataset):
         self,
         *,
         current_time: pd.Timestamp,
-        training_window: int,
-        target_window: int,
+        training_w: int,
+        forecast_w: int,
         stock_df: pd.DataFrame,
         fundamental_df: pd.DataFrame,
         meta_df: pd.DataFrame,
@@ -293,8 +293,8 @@ class EraDataset(Dataset):
         **_,
     ):
         # Get the relevant dates for training and targeting
-        historic_dates = get_historic_dates(current_time, training_window)
-        target_dates = get_target_dates(current_time, target_window)
+        historic_dates = get_historic_dates(current_time, training_w)
+        target_dates = get_target_dates(current_time, forecast_w)
 
         # Initialize NA counter
         self.na_percentage = dict()
@@ -371,14 +371,14 @@ class EraDataset(Dataset):
 
         self.tickers = formatted_stocks.index.to_list()
 
-        formatted_stocks = formatted_stocks.to_numpy().reshape((-1, training_window, 1))
+        formatted_stocks = formatted_stocks.to_numpy().reshape((-1, training_w, 1))
         legal_fundamentals = legal_fundamentals.to_numpy().reshape(
-            (-1, training_window, 18)
+            (-1, training_w, 18)
         )
 
         macro_df = (
             macro_df.to_numpy()
-            .reshape((1, training_window, 18))
+            .reshape((1, training_w, 18))
             .repeat(len(tickers), axis=0)
         )
 
