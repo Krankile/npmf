@@ -121,8 +121,8 @@ def normalize_fundamentals(
 
 
 def get_3d_fundamentals(
-    fundamental_df,
-    tickers,
+    fundamental_df: pd.DataFrame,
+    tickers: pd.Index,
     historic_dates,
     register_na,
     relatives: RelativeCols,
@@ -136,7 +136,7 @@ def get_3d_fundamentals(
     f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
 
-    rest = tickers - set(f.index.get_level_values(0).unique())
+    rest = tickers.difference(f.index.get_level_values(0).unique())
     missing = pd.DataFrame(
         np.nan,
         index=pd.MultiIndex.from_product(
@@ -161,7 +161,7 @@ def get_3d_fundamentals(
     return f
 
 
-def get_meta_df(meta_df: pd.DataFrame, tickers: set):
+def get_meta_df(meta_df: pd.DataFrame, tickers: pd.Index):
     legal_meta_df: pd.DataFrame = meta_df.set_index("ticker")
 
     # Join meta and stock-fundamentals
@@ -207,7 +207,7 @@ def get_macro_df(
     return full_macro_df.astype(np.float32)
 
 
-def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=None):
+def stock_target(stock_df: pd.DataFrame, tickers: pd.Index, target_dates, last_market_cap_col, scaler=None):
     targets: pd.DataFrame = stock_df[stock_df.date.isin(target_dates)]
 
     targets_unnormalized = get_stocks_in_timeframe(
@@ -217,8 +217,8 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=No
         remove_na=False,
     )
 
-    tickers = tickers & set(targets_unnormalized.index)
-    targets = targets.loc[tickers, :].astype(np.float32)
+    tickers = tickers.intersection(targets_unnormalized.index.unique()).sort_values()
+    targets_unnormalized = targets_unnormalized.loc[tickers, :].astype(np.float32)
 
     if scaler is None:
         targets = targets_unnormalized.div(
@@ -231,11 +231,10 @@ def stock_target(stock_df, tickers, target_dates, last_market_cap_col, scaler=No
             columns=targets_unnormalized.columns,
         )
 
-
     return targets, tickers
 
 
-def fundamental_target(fundamental_df, tickers, target_dates, relatives: RelativeCols):
+def fundamental_target(fundamental_df: pd.DataFrame, tickers: pd.Index, target_dates, relatives: RelativeCols):
 
     targets: pd.DataFrame = (
         fundamental_df[fundamental_df.date <= target_dates[-1]]
@@ -255,7 +254,7 @@ def fundamental_target(fundamental_df, tickers, target_dates, relatives: Relativ
     targets = targets.loc[~constant]
     targets = normalize_fundamentals(targets, relatives)
 
-    tickers = set(targets.index.unique()) & tickers
+    tickers = tickers.intersection(targets.index.unique()).sort_values()
     targets = targets.drop(columns=["date", "announce_date"]).loc[tickers, :]
 
     return targets, tickers
@@ -264,7 +263,7 @@ def fundamental_target(fundamental_df, tickers, target_dates, relatives: Relativ
 def get_target(
     stock_df: pd.DataFrame,
     fundamental_df: pd.DataFrame,
-    tickers: set,
+    tickers: pd.Index,
     target_dates: pd.DatetimeIndex,
     relatives: RelativeCols,
     forecast_problem: str,
@@ -323,11 +322,9 @@ class EraDataset(Dataset):
         # Get relative size information
         relatives = get_global_local_column(legal_stock_df)
 
-        tickers = set(formatted_stocks.index.unique())
+        tickers: pd.Index = formatted_stocks.index.unique()
 
         # Get targets
-        print("scaler", scaler if normalize_targets == Problem.market_cap.normalize.minmax else None)
-
         self.target, tickers = get_target(
             stock_df,
             fundamental_df,
