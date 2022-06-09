@@ -189,6 +189,21 @@ def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
 
     return l
 
+def cross_entropy_bankruptcy(four_targets: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+    #feature order: total_assets   |   total_current_assets  |   total_liabilites  |    total_current_liabilities
+    assets_to_liab = four_targets[:,0,:] / four_targets[:,2,:]
+    asset_prob = assets_to_liab < 1
+
+    curr_assets_to_liab = four_targets[:,1,:] / four_targets[:,3,:]
+    curr_asset_prob =  curr_assets_to_liab < 1
+
+    both_problems = (curr_asset_prob * asset_prob)
+
+    target = (torch.sum(both_problems, dim=1, keepdim=True) > 1)
+
+    weights = 1/(target.sum().div(len(target))*target + (~target).sum().div(len(target))*(~target))
+
+    return nn.functional.binary_cross_entropy(y_pred, target, weight=weights)
 
 loss_fns = dict(
     mape=mape_loss,
@@ -197,6 +212,7 @@ loss_fns = dict(
     smape=smape_loss,
     std_diff=std_loss_diff_abs,
     std_diff_mse=std_loss_diff_mse,
+    ce_bankruptcy=cross_entropy_bankruptcy, 
 )
 
 activations = dict(
