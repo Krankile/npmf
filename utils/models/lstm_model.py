@@ -41,7 +41,7 @@ class LstmV1(nn.Module):
         **_
     ):
         super().__init__()
-        self.lstm = LstmEncoderV1(
+        self.encoder = LstmEncoderV1(
             input_size,
             channels,
             dropout,
@@ -63,10 +63,8 @@ class LstmV1(nn.Module):
 
 
     def forward(self, x, cont, cat):
-        y = self.tcn(x)
-
+        y = self.encoder(x)
         meta = self.meta(cont, cat)
-
         y = self.predict(torch.cat([y[:, :, -1], meta], dim=1))
 
         return y
