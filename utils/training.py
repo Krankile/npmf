@@ -203,7 +203,7 @@ def cross_entropy_bankruptcy(three_targets: torch.Tensor, y_pred: torch.Tensor) 
 
     weights = 1/(target.sum().div(len(target))*target + (~target).sum().div(len(target))*(~target)) #sheeeeeshhhh 
 
-    return nn.functional.binary_cross_entropy(y_pred, target, weight=weights)
+    return nn.functional.binary_cross_entropy(torch.sigmoid(y_pred), target, weight=weights)
 
 loss_fns = dict(
     mape=mape_loss,
