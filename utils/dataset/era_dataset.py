@@ -135,7 +135,7 @@ def get_3d_fundamentals(
 
     f = normalize_fundamentals(f, relatives)
 
-    dates = pd.date_range(end=current_time, periods=240 * 2, freq="D")
+    dates = pd.date_range(end=current_time, periods=len(historic_dates) * 2, freq="D")
     f = f.reset_index().set_index(["ticker", "announce_date"])
     f.index = f.index.rename("date", level=1)
     f = f.reindex(
