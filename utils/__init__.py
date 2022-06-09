@@ -15,6 +15,7 @@ class FundLoss:
 
 class FundForecastW:
     h60 = 60
+    h240 = 240
 
 
 class MCForecastW:
