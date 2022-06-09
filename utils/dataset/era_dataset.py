@@ -206,7 +206,7 @@ def stock_target(stock_df: pd.DataFrame, tickers: pd.Index, target_dates):
     tickers = tickers.intersection(targets_unnormalized.index.unique()).sort_values()
     targets_unnormalized = targets_unnormalized.loc[tickers, :].astype(np.float32)
 
-    return targets_unnormalized, tickers
+    return targets_unnormalized, tickers, ["market_cap"]
 
 
 def fundamental_target(
@@ -236,9 +236,11 @@ def fundamental_target(
     tickers = tickers.intersection(targets.index.unique()).sort_values()
     targets = targets.drop(columns=["date"]).loc[tickers, :]
 
+    target_fields = targets.columns.to_list()
+
     targets = targets.values.reshape((len(tickers), len(targets.columns), len(target_dates)))
 
-    return targets, tickers
+    return targets, tickers, target_fields
 
 
 def normalize_stock_target(
@@ -334,7 +336,7 @@ class EraDataset(Dataset):
         tickers: pd.Index = formatted_stocks.index.unique()
 
         # Get targets
-        target, tickers = get_target(
+        target, tickers, self.target_fields = get_target(
             stock_df,
             fundamental_df,
             tickers,
@@ -379,9 +381,6 @@ class EraDataset(Dataset):
             + legal_fundamentals.columns.to_list()
             + macro_df.columns.to_list()
         )
-
-        self.target = target.to_numpy().astype(np.float32)
-        self.target_fields = target.columns.to_list()
 
         self.tickers = formatted_stocks.index.to_list()
 
