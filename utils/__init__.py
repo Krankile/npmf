@@ -10,6 +10,7 @@ class VolLoss:
 class FundLoss:
     mape = "mape_2"
     smape = "smape"
+    ce_bankruptcy = "ce_bankruptcy"
 
 
 class FundForecastW:
