@@ -359,6 +359,8 @@ class EraDataset(Dataset):
             target, forecast_problem, tickers, relatives, scaler, normalize_targets
         )
 
+        self.target = target
+
         legal_fundamentals = get_3d_fundamentals(
             fundamental_df,
             tickers,
