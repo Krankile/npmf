@@ -22,7 +22,8 @@ class LstmEncoderV1(nn.Module):
 
     def forward(self, x):
         _, (h_n, _) = self.lstm1(x.transpose(1, 2))
-        return h_n[-1].unsqueeze(1)
+        return h_n[-1]
+
 
 
 class LstmV1(nn.Module):
@@ -65,7 +66,7 @@ class LstmV1(nn.Module):
     def forward(self, x, cont, cat):
         y = self.encoder(x)
         meta = self.meta(cont, cat)
-        y = self.predict(torch.cat([y[:, :, -1], meta], dim=1))
+        y = self.predict(torch.cat([y, meta], dim=1))
 
         return y
 
