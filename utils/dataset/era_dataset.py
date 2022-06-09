@@ -294,7 +294,7 @@ class EraDataset(Dataset):
         meta_df: pd.DataFrame,
         macro_df: pd.DataFrame,
         forecast_problem: str,
-        normalize_targets: str,
+        normalize_targets: str = Problem.market_cap.normalize.mcap,
         **_,
     ):
         # Get the relevant dates for training and targeting
