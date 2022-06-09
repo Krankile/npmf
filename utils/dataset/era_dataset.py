@@ -109,40 +109,41 @@ def normalize_fundamentals(
 def get_3d_fundamentals(
     fundamental_df: pd.DataFrame,
     tickers: pd.Index,
-    historic_dates,
-    register_na,
+    dates,
     relatives: RelativeCols,
+    register_na=None,
 ):
-    current_time = historic_dates.values[-1]
+    current_time = dates.values[-1]
     f = fundamental_df[
-        (current_time + pd.Timedelta(weeks=104) <= fundamental_df.announce_date)
+        (current_time + pd.Timedelta(weeks=int(2*52*len(dates)/240)) <= fundamental_df.announce_date)
         & (fundamental_df.announce_date <= current_time)
     ]
 
     f = fundamental_df.set_index(["ticker", "announce_date"]).drop(columns=["date"])
     f = f.groupby(level=f.index.names).last()
 
-    rest = tickers.difference(f.index.get_level_values(0).unique())
-    missing = pd.DataFrame(
-        np.nan,
-        index=pd.MultiIndex.from_product(
-            [rest, range(4)], names=["ticker", "announce_date"]
-        ),
-        columns=f.columns,
-    )
+    if register_na is not None:
+        rest = tickers.difference(f.index.get_level_values(0).unique())
+        missing = pd.DataFrame(
+            np.nan,
+            index=pd.MultiIndex.from_product(
+                [rest, range(4)], names=["ticker", "announce_date"]
+            ),
+            columns=f.columns,
+        )
 
-    register_na(pd.concat([f, missing], axis=0))
+        register_na(pd.concat([f, missing], axis=0))
 
     f = normalize_fundamentals(f, relatives)
 
-    dates = pd.date_range(end=current_time, periods=len(historic_dates) * 2, freq="D")
+    all_dates = pd.date_range(end=current_time, periods=int(2*365*len(dates)/240), freq="D")
     f = f.reset_index().set_index(["ticker", "announce_date"])
     f.index = f.index.rename("date", level=1)
     f = f.reindex(
-        index=pd.MultiIndex.from_product([tickers, dates], names=["ticker", "date"])
+        index=pd.MultiIndex.from_product([tickers, all_dates], names=["ticker", "date"])
     )
-    f = f.loc[f.index.get_level_values(1).isin(historic_dates), :]
     f = f.groupby(level=0).ffill().replace(np.nan, 0)
+    f = f.loc[f.index.get_level_values(1).isin(dates), :]
 
     return f
 
@@ -212,27 +213,30 @@ def fundamental_target(
     fundamental_df: pd.DataFrame,
     tickers: pd.Index,
     target_dates,
+    relatives,
 ):
-
-    targets: pd.DataFrame = (
-        fundamental_df[fundamental_df.date <= target_dates[-1]]
-        .dropna(how="all")
-        .groupby("ticker")
-        .last()
+    targets: pd.DataFrame = get_3d_fundamentals(
+        fundamental_df,
+        tickers,
+        target_dates,
+        relatives,
     )
+
     last: pd.DataFrame = (
         fundamental_df[fundamental_df.date < target_dates[0]]
         .dropna(how="all")
         .groupby("ticker")
         .last()
     )
-
-    constant = targets.replace(np.nan, 0).eq(last.replace(np.nan, 0)).all(axis=1)
-
-    targets = targets.loc[~constant]
+    
+    constant = targets.ne(last.replace(np.nan, 0)).any(axis=1).groupby("ticker").sum() < 1
+    
+    targets = targets.reset_index().set_index("ticker").loc[~constant]
 
     tickers = tickers.intersection(targets.index.unique()).sort_values()
     targets = targets.drop(columns=["date", "announce_date"]).loc[tickers, :]
+
+    targets = targets.values.reshape((len(tickers), len(targets.columns), len(target_dates)))
 
     return targets, tickers
 
@@ -261,7 +265,7 @@ def normalize_target(
     normalize_targets=None,
 ):
     if forecast_problem == Problem.fundamentals.name:
-        return normalize_fundamentals(target, relatives)
+        return target
 
     return normalize_stock_target(
         target, tickers, scaler, relatives.last, normalize_targets
@@ -274,10 +278,11 @@ def get_target(
     tickers: pd.Index,
     target_dates: pd.DatetimeIndex,
     forecast_problem: str,
+    relatives,
 ):
 
     if forecast_problem == Problem.fundamentals.name:
-        return fundamental_target(fundamental_df, tickers, target_dates)
+        return fundamental_target(fundamental_df, tickers, target_dates, relatives)
 
     return stock_target(stock_df, tickers, target_dates)
 
@@ -336,6 +341,7 @@ class EraDataset(Dataset):
             tickers,
             target_dates,
             forecast_problem,
+            relatives,
         )
         register_na_percentage(self.na_percentage, "target", target)
 
@@ -357,8 +363,8 @@ class EraDataset(Dataset):
             fundamental_df,
             tickers,
             historic_dates,
-            partial(register_na_percentage, self.na_percentage, "fundamental"),
             relatives,
+            register_na=partial(register_na_percentage, self.na_percentage, "fundamental"),
         )
 
         # TODO: Review the strategy for dealing with nan values
