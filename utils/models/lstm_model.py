@@ -21,7 +21,7 @@ class LstmEncoderV1(nn.Module):
         )
 
     def forward(self, x):
-        _, (h_n, _) = self.lstm1(x)
+        _, (h_n, _) = self.lstm1(x.transpose(1, 2))
         return h_n[-1].unsqueeze(1)
 
 
