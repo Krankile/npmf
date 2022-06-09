@@ -145,7 +145,7 @@ def put_nn_model(model: nn.Module, run) -> None:
 data_artifacts = {
     (Problem.market_cap.name, Problem.market_cap.forecast_w.h20, Problem.market_cap.normalize.mcap): "era-datasets:20",
     (Problem.market_cap.name, Problem.market_cap.forecast_w.h240, Problem.market_cap.normalize.mcap): "era-datasets:240",
-    (Problem.market_cap.name, Problem.market_cap.forecast_w.h20, Problem.market_cap.normalize.minmax): "era-dataset-target-minmax:v2",
+    # (Problem.market_cap.name, Problem.market_cap.forecast_w.h20, Problem.market_cap.normalize.minmax): "era-dataset-target-minmax:v2",
     (Problem.fundamentals.name, Problem.fundamentals.forecast_w.h60, None): "fund-era-datasets:60",
     (Problem.volatility.name, Problem.volatility.forecast_w.h20, None): "era-datasets:20",
 }

@@ -35,7 +35,7 @@ class EraController:
         self.path_dict = None
         if "pre_proc_data_dir" in self.conf and self.conf.pre_proc_data_dir is not None:
             self.path_dict = {
-                path.split("/")[-1]: path
+                path.split("/")[-1].split(" ")[0]: path
                 for path in sorted(glob(self.conf.pre_proc_data_dir + "/*"))
             }
         else:
@@ -112,7 +112,7 @@ class EraController:
     def get_dataset(self, date):
 
         if self.path_dict is not None:
-            with open(self.path_dict[str(date)], "rb") as f:
+            with open(self.path_dict[str(date.date())], "rb") as f:
                 dataset: EraDataset = pickle.load(f)
         else:
             dataset = EraDataset(
