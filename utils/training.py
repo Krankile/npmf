@@ -232,7 +232,7 @@ def get_naive_pred(data, target, device, conf):
 
         if (
             conf.get("normalize_targets") is None
-            or conf.get("normalize_targets") == Problem.normalize.mc
+            or conf.get("normalize_targets") == Problem.market_cap.normalize.mcap
         ):
             return torch.ones(target.shape, device=device)
 
