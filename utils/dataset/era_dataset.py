@@ -400,10 +400,7 @@ class EraDataset(Dataset):
             .transpose(0, 2, 1)
             .astype(np.float32)
         )
-
-        print("self.data", self.data.shape)
-        print("self.target", self.target.shape)
-
+        
     def __len__(self):
         return self.data.shape[0]
 
