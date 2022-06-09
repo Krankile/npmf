@@ -234,7 +234,7 @@ def fundamental_target(
     targets = targets.reset_index().set_index("ticker").loc[~constant]
 
     tickers = tickers.intersection(targets.index.unique()).sort_values()
-    targets = targets.drop(columns=["date", "announce_date"]).loc[tickers, :]
+    targets = targets.drop(columns=["date"]).loc[tickers, :]
 
     targets = targets.values.reshape((len(tickers), len(targets.columns), len(target_dates)))
 
