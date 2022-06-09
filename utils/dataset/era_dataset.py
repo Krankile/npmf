@@ -321,7 +321,6 @@ class EraDataset(Dataset):
             .copy()
             .loc[stock_df.date.isin(historic_dates), :]
         )
-        register_na_percentage(self.na_percentage, "stock", legal_stock_df)
 
         formatted_stocks = get_stocks_in_timeframe(
             legal_stock_df,
@@ -343,7 +342,6 @@ class EraDataset(Dataset):
             forecast_problem,
             relatives,
         )
-        register_na_percentage(self.na_percentage, "target", target)
 
         # Make sure that only tickers with data both in training and forecasting is included
         formatted_stocks = formatted_stocks.loc[tickers, :]
