@@ -153,7 +153,7 @@ def std_loss_diff_mse(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     return l
 
 
-def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+def std_loss_diff_mae(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
     # y_t/y_k-y_{t-1}/y_k => (y_t-y_{t-1})/y_k * y_k/y_{t-1} = (y_t-y_{t-1})/y_{t-1}
     target_ = target.diff() * (target[:, :-1] ** (-1))
 
@@ -219,7 +219,7 @@ loss_fns = dict(
     mape_2=mape_loss_2,
     mse_2=mse_loss_2,
     smape=smape_loss,
-    std_diff=std_loss_diff_abs,
+    std_diff_mae=std_loss_diff_mae,
     std_diff_mse=std_loss_diff_mse,
     ce_bankruptcy=cross_entropy_bankruptcy,
 )

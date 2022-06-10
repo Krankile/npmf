@@ -4,7 +4,8 @@ class MCLoss:
 
 
 class VolLoss:
-    std_diff = "std_diff"
+    std_diff_mae = "std_diff_mae"
+    std_diff_mse = "std_diff_mse"
 
 
 class FundLoss:
