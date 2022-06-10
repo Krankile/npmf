@@ -214,8 +214,19 @@ def cross_entropy_bankruptcy(
         + (~target).sum().div(len(target)) * (~target)
     )  # sheeeeeshhhh
 
+    weights /= weights.sum()
+
     return nn.functional.binary_cross_entropy(
         torch.sigmoid(y_pred), target.to(torch.float32), weight=weights
+    )
+
+def cross_entropy_bankruptcy_unweighted(
+    three_targets: torch.Tensor, y_pred: torch.Tensor
+) -> torch.Tensor:
+    target = three_balance_to_bankrupt(three_targets)
+
+    return nn.functional.binary_cross_entropy(
+        torch.sigmoid(y_pred), target.to(torch.float32)
     )
 
 
@@ -227,6 +238,7 @@ loss_fns = dict(
     std_diff_mae=std_loss_diff_mae,
     std_diff_mse=std_loss_diff_mse,
     ce_bankruptcy=cross_entropy_bankruptcy,
+    ce_bankruptcy_unweighted=cross_entropy_bankruptcy_unweighted,
 )
 
 activations = dict(
