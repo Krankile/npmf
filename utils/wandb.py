@@ -161,6 +161,7 @@ data_artifacts = {
         Problem.market_cap.forecast_w.h240,
         Problem.market_cap.normalize.minmax,
     ): "era-dataset-target-minmax:240",
+    
     (
         Problem.fundamentals.name,
         Problem.fundamentals.training_w.h240,
@@ -173,9 +174,10 @@ data_artifacts = {
         Problem.fundamentals.forecast_w.h240,
         None,
     ): "fund-dataset-480-240-3dtarget:v0",
+
     (
         Problem.volatility.name,
-        Problem.volatility.training_w.h20,
+        Problem.volatility.training_w.h240,
         Problem.volatility.forecast_w.h20,
         None,
     ): "era-datasets:20",
