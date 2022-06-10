@@ -215,7 +215,7 @@ def cross_entropy_bankruptcy(
     )  # sheeeeeshhhh
 
     return nn.functional.binary_cross_entropy(
-        torch.sigmoid(y_pred), target, weight=weights
+        torch.sigmoid(y_pred), target.to(torch.float32), weight=weights
     )
 
 
