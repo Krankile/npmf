@@ -115,7 +115,10 @@ def get_3d_fundamentals(
 ):
     current_time = dates.values[-1]
     f = fundamental_df[
-        (current_time + pd.Timedelta(weeks=int(2*52*len(dates)/240)) <= fundamental_df.announce_date)
+        (
+            current_time + pd.Timedelta(weeks=int(2 * 52 * len(dates) / 240))
+            <= fundamental_df.announce_date
+        )
         & (fundamental_df.announce_date <= current_time)
     ]
 
@@ -136,7 +139,9 @@ def get_3d_fundamentals(
 
     f = normalize_fundamentals(f, relatives)
 
-    all_dates = pd.date_range(end=current_time, periods=int(2*365*len(dates)/240), freq="D")
+    all_dates = pd.date_range(
+        end=current_time, periods=int(2 * 365 * len(dates) / 240), freq="D"
+    )
     f = f.reset_index().set_index(["ticker", "announce_date"])
     f.index = f.index.rename("date", level=1)
     f = f.reindex(
@@ -228,9 +233,11 @@ def fundamental_target(
         .groupby("ticker")
         .last()
     )
-    
-    constant = targets.ne(last.replace(np.nan, 0)).any(axis=1).groupby("ticker").sum() < 1
-    
+
+    constant = (
+        targets.ne(last.replace(np.nan, 0)).any(axis=1).groupby("ticker").sum() < 1
+    )
+
     targets = targets.reset_index().set_index("ticker").loc[~constant]
 
     tickers = tickers.intersection(targets.index.unique()).sort_values()
@@ -238,7 +245,9 @@ def fundamental_target(
 
     target_fields = targets.columns.to_list()
 
-    targets = targets.values.reshape((len(tickers), len(targets.columns), len(target_dates)))
+    targets = targets.values.reshape(
+        (len(tickers), len(targets.columns), len(target_dates))
+    )
 
     return targets, tickers, target_fields
 
@@ -366,7 +375,9 @@ class EraDataset(Dataset):
             tickers,
             historic_dates,
             relatives,
-            register_na=partial(register_na_percentage, self.na_percentage, "fundamental"),
+            register_na=partial(
+                register_na_percentage, self.na_percentage, "fundamental"
+            ),
         )
 
         # TODO: Review the strategy for dealing with nan values
@@ -400,7 +411,7 @@ class EraDataset(Dataset):
             .transpose(0, 2, 1)
             .astype(np.float32)
         )
-        
+
     def __len__(self):
         return self.data.shape[0]
 

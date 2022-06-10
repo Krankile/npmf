@@ -143,16 +143,49 @@ def put_nn_model(model: nn.Module, run) -> None:
 
 
 data_artifacts = {
-    (Problem.market_cap.name, Problem.market_cap.forecast_w.h20, Problem.market_cap.normalize.mcap): "era-datasets:20",
-    (Problem.market_cap.name, Problem.market_cap.forecast_w.h240, Problem.market_cap.normalize.mcap): "era-datasets:240",
-    (Problem.market_cap.name, Problem.market_cap.forecast_w.h240, Problem.market_cap.normalize.minmax): "era-dataset-target-minmax:240",
-    (Problem.fundamentals.name, Problem.fundamentals.forecast_w.h60, None): "fund-era-datasets:60",
-    (Problem.volatility.name, Problem.volatility.forecast_w.h20, None): "era-datasets:20",
+    (
+        Problem.market_cap.name,
+        Problem.market_cap.training_w.h240,
+        Problem.market_cap.forecast_w.h20,
+        Problem.market_cap.normalize.mcap,
+    ): "era-datasets:20",
+    (
+        Problem.market_cap.name,
+        Problem.market_cap.training_w.h240,
+        Problem.market_cap.forecast_w.h240,
+        Problem.market_cap.normalize.mcap,
+    ): "era-datasets:240",
+    (
+        Problem.market_cap.name,
+        Problem.market_cap.training_w.h240,
+        Problem.market_cap.forecast_w.h240,
+        Problem.market_cap.normalize.minmax,
+    ): "era-dataset-target-minmax:240",
+    (
+        Problem.fundamentals.name,
+        Problem.fundamentals.training_w.h240,
+        Problem.fundamentals.forecast_w.h60,
+        None,
+    ): "fund-era-datasets:60",
+    (
+        Problem.fundamentals.name,
+        Problem.fundamentals.training_w.h480,
+        Problem.fundamentals.forecast_w.h240,
+        None,
+    ): "fund-dataset-480-240-3dtarget:v0",
+    (
+        Problem.volatility.name,
+        Problem.volatility.training_w.h20,
+        Problem.volatility.forecast_w.h20,
+        None,
+    ): "era-datasets:20",
 }
 
 
 def get_processed_data(run, conf: wb.Config):
-    artifact = data_artifacts[(conf.forecast_problem, conf.forecast_w, conf.normalize_targets)]
+    artifact = data_artifacts[
+        (conf.forecast_problem, conf.forecast_w, conf.normalize_targets)
+    ]
 
     art: wb.Artifact = run.use_artifact(f"krankile/master/{artifact}")
 

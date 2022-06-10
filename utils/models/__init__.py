@@ -6,6 +6,11 @@ from .naive_tcn_model import naive_tcn_models
 
 from torch import nn
 
-models: Dict[str, nn.Module] = {**naive_models, **tcn_models, **naive_tcn_models, **lstm_models}
+models: Dict[str, nn.Module] = {
+    **naive_models,
+    **tcn_models,
+    **naive_tcn_models,
+    **lstm_models,
+}
 
 __all__ = [models]

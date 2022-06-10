@@ -27,6 +27,21 @@ class VolForecastW:
     h20 = 20
 
 
+class FundTrainingW:
+    h240 = 240
+    h480 = 480
+
+
+class MCTrainingW:
+    h240 = 240
+    h480 = 480
+
+
+class VolTrainingW:
+    h240 = 240
+    h480 = 480
+
+
 class MCNormalize:
     mcap = "mcap"
     minmax = "minmax"
@@ -35,6 +50,7 @@ class MCNormalize:
 class MarketCap:
     name = "market_cap"
     loss = MCLoss
+    training_w = MCTrainingW
     forecast_w = MCForecastW
     normalize = MCNormalize
 
@@ -42,12 +58,14 @@ class MarketCap:
 class Volatility:
     name = "volatility"
     loss = VolLoss
+    training_w = VolTrainingW
     forecast_w = VolForecastW
 
 
 class Fundamentals:
     name = "fundamentals"
     loss = FundLoss
+    training_w = FundTrainingW
     forecast_w = FundForecastW
 
 

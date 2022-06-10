@@ -189,21 +189,30 @@ def std_loss_diff_abs(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
 
     return l
 
-def cross_entropy_bankruptcy(three_targets: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
-    #feature order: total_current_assets/total_assets  |   total_liabilites/total_assets  |    total_current_liabilities/total_assets
-    assets_to_liab = 1/three_targets[:,1,:]
+
+def cross_entropy_bankruptcy(
+    three_targets: torch.Tensor, y_pred: torch.Tensor
+) -> torch.Tensor:
+    # feature order: total_current_assets/total_assets  |   total_liabilites/total_assets  |    total_current_liabilities/total_assets
+    assets_to_liab = 1 / three_targets[:, 1, :]
     asset_prob = assets_to_liab < 1
 
-    curr_assets_to_liab = three_targets[:,0,:] / three_targets[:,2,:]
-    curr_asset_prob =  curr_assets_to_liab < 1
+    curr_assets_to_liab = three_targets[:, 0, :] / three_targets[:, 2, :]
+    curr_asset_prob = curr_assets_to_liab < 1
 
-    both_problems = (curr_asset_prob * asset_prob)
+    both_problems = curr_asset_prob * asset_prob
 
-    target = (torch.sum(both_problems, dim=1, keepdim=True) > 1)
+    target = torch.sum(both_problems, dim=1, keepdim=True) > 1
 
-    weights = 1/(target.sum().div(len(target))*target + (~target).sum().div(len(target))*(~target)) #sheeeeeshhhh 
+    weights = 1 / (
+        target.sum().div(len(target)) * target
+        + (~target).sum().div(len(target)) * (~target)
+    )  # sheeeeeshhhh
 
-    return nn.functional.binary_cross_entropy(torch.sigmoid(y_pred), target, weight=weights)
+    return nn.functional.binary_cross_entropy(
+        torch.sigmoid(y_pred), target, weight=weights
+    )
+
 
 loss_fns = dict(
     mape=mape_loss,
@@ -212,7 +221,7 @@ loss_fns = dict(
     smape=smape_loss,
     std_diff=std_loss_diff_abs,
     std_diff_mse=std_loss_diff_mse,
-    ce_bankruptcy=cross_entropy_bankruptcy, 
+    ce_bankruptcy=cross_entropy_bankruptcy,
 )
 
 activations = dict(

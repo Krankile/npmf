@@ -33,7 +33,6 @@ class MetaModel(nn.Module):
             activations[activation](),
         )
 
-
     def forward(self, cont, cat):
         return self.meta_hidden(
             torch.cat(

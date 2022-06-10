@@ -8,7 +8,11 @@ from ..training import activations
 
 class LstmEncoderV1(nn.Module):
     def __init__(
-        self, input_size, hidden_dim, dropout, num_layers,
+        self,
+        input_size,
+        hidden_dim,
+        dropout,
+        num_layers,
     ):
         super().__init__()
 
@@ -23,7 +27,6 @@ class LstmEncoderV1(nn.Module):
     def forward(self, x):
         _, (h_n, _) = self.lstm1(x.transpose(1, 2))
         return h_n[-1]
-
 
 
 class LstmV1(nn.Module):
@@ -62,13 +65,13 @@ class LstmV1(nn.Module):
             nn.Linear(hd, out_len),
         )
 
-
     def forward(self, x, cont, cat):
         y = self.encoder(x)
         meta = self.meta(cont, cat)
         y = self.predict(torch.cat([y, meta], dim=1))
 
         return y
+
 
 lstm_models = dict(
     LstmV1=LstmV1,
