@@ -190,9 +190,7 @@ def std_loss_diff_mae(target: torch.Tensor, y_pred: torch.Tensor) -> torch.Tenso
     return l
 
 
-def cross_entropy_bankruptcy(
-    three_targets: torch.Tensor, y_pred: torch.Tensor
-) -> torch.Tensor:
+def three_balance_to_bankrupt(three_targets):
     # feature order: total_current_assets/total_assets  |   total_liabilites/total_assets  |    total_current_liabilities/total_assets
     assets_to_liab = 1 / three_targets[:, 1, :]
     asset_prob = assets_to_liab < 1
@@ -203,6 +201,13 @@ def cross_entropy_bankruptcy(
     both_problems = curr_asset_prob * asset_prob
 
     target = torch.sum(both_problems, dim=1, keepdim=True) > 1
+    return target
+
+
+def cross_entropy_bankruptcy(
+    three_targets: torch.Tensor, y_pred: torch.Tensor
+) -> torch.Tensor:
+    target = three_balance_to_bankrupt(three_targets)
 
     weights = 1 / (
         target.sum().div(len(target)) * target
@@ -249,6 +254,9 @@ def get_naive_pred(data, target, device, conf):
         return data[:, 0, -conf.forecast_w :].std(dim=1, keepdim=True)
 
     if conf.forecast_problem == Problem.fundamentals.name:
+        if conf.train_loss == Problem.fundamentals.loss.ce_bankruptcy:
+            return three_balance_to_bankrupt(data[:, slice(9, 12), -conf.forecast_w:])
+
         subset = conf.get("fundamental_targets") or slice(1, 18 + 1)
         return data[:, subset, -1]
 
