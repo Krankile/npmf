@@ -186,7 +186,7 @@ data_artifacts = {
 
 def get_processed_data(run, conf: wb.Config):
     artifact = data_artifacts[
-        (conf.forecast_problem, conf.forecast_w, conf.normalize_targets)
+        (conf.forecast_problem, conf.training_w, conf.forecast_w, conf.normalize_targets)
     ]
 
     art: wb.Artifact = run.use_artifact(f"krankile/master/{artifact}")
