@@ -29,6 +29,4 @@ def clamp_and_slice(dataset, *, conf):
     ):
         dataset.target = dataset.target[:, conf.fundamental_targets]
 
-        # TODO: Drop targets where the subset of columns does not change
-
     return dataset

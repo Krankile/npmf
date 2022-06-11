@@ -267,7 +267,8 @@ def get_naive_pred(data, target, device, conf):
 
     if conf.forecast_problem == Problem.fundamentals.name:
         if conf.train_loss == Problem.fundamentals.loss.ce_bankruptcy:
-            return three_balance_to_bankrupt(data[:, slice(9, 12), -conf.forecast_w:]).to(torch.float32)
+            slc = slice(9, 12) if conf.feature_subset is None else slice(0, 3)
+            return three_balance_to_bankrupt(data[:, slc, -conf.forecast_w:]).to(torch.float32)
 
         subset = conf.get("fundamental_targets") or slice(1, 18 + 1)
         return data[:, subset, -1]
